@@ -94,9 +94,10 @@ Do test prints with your print partner before launch (plan §10).
 | Postgres | managed or VM, daily encrypted backups + WAL archiving | — |
 | Redis | 1 GB, AOF | — |
 
-Each renderer process handles one job at a time (Chromium plus a full-page raster). On Linux, MapLibre Native renders
-with Mesa (llvmpipe) on the CPU, so benchmark on the target hosts with `pnpm --filter @mapmory/renderer bench A0 300` and
-size the job timeout (`RENDER_JOB_TIMEOUT_MS`, default 5 min). GPU hosts render much faster.
+Each renderer process handles one job at a time (Chromium plus a full-page raster). Measured on 4 CPU-only vCPUs
+(ADR 0002): an A0 PDF takes 4 s and an A0 PNG 25 s; most of the PNG time is rasterizing, not map rendering. One
+`renderer-large` worker therefore clears roughly 140 A0 PNGs an hour; scale on queue wait rather than CPU. Re-run
+the benchmark on the real host (`docker run … mapmory-renderer node dist/cli.js <design.json> out.png png 300`).
 
 ## 8. Retention and maintenance
 
@@ -121,7 +122,7 @@ immediate in the database. Backups age out within the backup rotation (keep it �
 ## 10. Release checklist
 
 1. CI green, including renderer parity, e2e/axe, Trivy and gitleaks.
-2. `docker compose -f infra/docker-compose.prod.yml run --rm migrate`
+2. `docker compose -f infra/docker-compose.prod.yml run --rm migrate`. When the release raises the design `SCHEMA_VERSION`, update the renderers together with or before the API: an older renderer refuses newer designs (the export fails with `invalid_design`).
 3. `docker compose -f infra/docker-compose.prod.yml up -d`
 4. Smoke test: `/readyz`, create a poster, export an A4 PDF, download it.
 5. Before public launch: external penetration test, test prints of each theme, and the DPA list in the privacy notice.

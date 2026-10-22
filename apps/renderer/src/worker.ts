@@ -57,8 +57,19 @@ async function processJob(job: Job<{ exportId: string }>, queue: string) {
   if (!row) throw new UnrecoverableError('Export job not found (deleted?)');
   if (row.job.status === 'done' || row.job.status === 'expired') return;
 
-  const options = ExportOptionsSchema.parse(row.job.options);
-  const design = migrateDesign(row.document);
+  let options: ReturnType<typeof ExportOptionsSchema.parse>;
+  let design: ReturnType<typeof migrateDesign>;
+  try {
+    options = ExportOptionsSchema.parse(row.job.options);
+    design = migrateDesign(row.document);
+  } catch (err) {
+    // A design this worker cannot read (e.g. a newer schema than its code) fails at once instead of sitting
+    // "queued" until the stale-job sweep. Deploy workers with or before the API when the schema changes.
+    failures.inc({ code: 'invalid_design' });
+    await update(exportId, { status: 'failed', errorCode: 'invalid_design', finishedAt: new Date() });
+    console.error(JSON.stringify({ level: 'error', msg: 'export failed', exportId, code: 'invalid_design', error: (err as Error).message }));
+    throw new UnrecoverableError('invalid_design');
+  }
   const end = duration.startTimer({ queue, format: options.format, dpi: String(options.dpi) });
   await update(exportId, { status: 'rendering', progress: 5, startedAt: new Date(), errorCode: null });
 
