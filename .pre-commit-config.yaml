@@ -1,0 +1,6 @@
+# `pipx install pre-commit && pre-commit install` — blocks committing secrets (plan §8.1).
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.0
+    hooks:
+      - id: gitleaks

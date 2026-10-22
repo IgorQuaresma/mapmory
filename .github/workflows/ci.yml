@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm --filter "./packages/*" --filter @mapmory/api --filter @mapmory/web test
+
+  api-integration:
+    name: API integration (Testcontainers)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mapmory/api test:integration
+
+  renderer:
+    name: Renderer (export checks, golden renders, parity)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils ghostscript xvfb libgl1-mesa-dri libegl1 libopengl0 libcurl4 libuv1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mapmory/renderer exec playwright install --with-deps chromium
+      - name: Dev tiles (regional extract) + Martin
+        run: |
+          pnpm setup:tiles
+          docker compose -f infra/docker-compose.yml up -d martin
+          timeout 60 bash -c 'until curl -sf localhost:3010/catalog; do sleep 1; done'
+      - run: pnpm --filter @mapmory/print-page build
+      # Goldens are portable: a Linux/Mesa render differs from the macOS/Metal goldens by 0.4 % (< 1 % threshold).
+      - run: xvfb-run -a pnpm --filter @mapmory/renderer test
+      - run: xvfb-run -a pnpm --filter @mapmory/renderer parity 0.005
+      - run: xvfb-run -a pnpm --filter @mapmory/renderer parity 0.03 --labels
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: renderer-output, path: apps/renderer/test/__output__ }
+
+  e2e:
+    name: Web e2e + accessibility (mock API)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @mapmory/web exec playwright install --with-deps chromium
+      - name: Dev tiles + Martin (map tiles for the preview)
+        run: |
+          pnpm setup:tiles
+          docker compose -f infra/docker-compose.yml up -d martin
+      - run: pnpm --filter @mapmory/web e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: apps/web/playwright-report }
+
+  security:
+    name: Secrets, dependencies, SAST
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+      - uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        with: { scan-args: "--lockfile=pnpm-lock.yaml" }
+      - uses: semgrep/semgrep-action@v1
+        with: { config: "p/typescript p/react p/nodejs p/owasp-top-ten p/secrets" }
+
+  images:
+    name: Build, scan and SBOM container images
+    runs-on: ubuntu-24.04
+    needs: [checks]
+    strategy:
+      matrix:
+        app: [api, web, renderer]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          tags: mapmory-${{ matrix.app }}:ci
+          load: true
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: mapmory-${{ matrix.app }}:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+      - uses: anchore/sbom-action@v0
+        with: { image: "mapmory-${{ matrix.app }}:ci", artifact-name: "sbom-${{ matrix.app }}.spdx.json" }

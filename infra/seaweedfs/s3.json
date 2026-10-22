@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "mapmory",
+      "credentials": [{ "accessKey": "mapmory", "secretKey": "mapmory_dev_password" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

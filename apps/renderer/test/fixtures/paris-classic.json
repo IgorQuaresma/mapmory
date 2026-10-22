@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "page": {
+    "paper": "A3",
+    "orientation": "portrait",
+    "trimMm": {
+      "w": 297,
+      "h": 420
+    },
+    "marginDu": 60,
+    "background": "#F5F1E8",
+    "frame": {
+      "style": "thin-line",
+      "color": "#1F1F1F",
+      "widthDu": 2,
+      "insetDu": 30
+    }
+  },
+  "map": {
+    "insetDu": {
+      "top": 60,
+      "right": 60,
+      "bottom": 300,
+      "left": 60
+    },
+    "center": [
+      2.33753,
+      48.85826
+    ],
+    "zoom": 14.6,
+    "bearing": 0,
+    "shape": "rect",
+    "outline": {
+      "widthDu": 0,
+      "color": "#1F1F1F"
+    },
+    "themeId": "classic-ink",
+    "palette": {
+      "land": "#F5F1E8",
+      "water": "#CFD9DC",
+      "parks": "#E3E6D3",
+      "roads": "#1F1F1F",
+      "roadsMinor": "#5E5E5E",
+      "buildings": "#E8E1D3",
+      "rail": "#8A8A8A",
+      "labels": "#1F1F1F"
+    },
+    "layers": {
+      "roads": true,
+      "paths": false,
+      "buildings": true,
+      "water": true,
+      "parks": true,
+      "railways": false,
+      "labels": false
+    },
+    "labelLanguage": "en",
+    "roadWeight": 1
+  },
+  "markers": [
+    {
+      "id": "m1",
+      "lngLat": [
+        2.33753,
+        48.85826
+      ],
+      "icon": "pin",
+      "color": "#B23A3A",
+      "sizeDu": 40
+    }
+  ],
+  "texts": [
+    {
+      "id": "title",
+      "role": "title",
+      "content": "Where it all began",
+      "fontId": "playfair-display",
+      "weight": 700,
+      "italic": false,
+      "sizeDu": 64,
+      "letterSpacing": 0,
+      "uppercase": false,
+      "color": "#1F1F1F",
+      "align": "center",
+      "slot": "bottom",
+      "order": 0,
+      "offsetDu": [
+        0,
+        0
+      ],
+      "visible": true
+    },
+    {
+      "id": "subtitle",
+      "role": "subtitle",
+      "content": "Paris, France",
+      "fontId": "montserrat",
+      "weight": 400,
+      "italic": false,
+      "sizeDu": 22,
+      "letterSpacing": 0.2,
+      "uppercase": true,
+      "color": "#1F1F1F",
+      "align": "center",
+      "slot": "bottom",
+      "order": 1,
+      "offsetDu": [
+        0,
+        0
+      ],
+      "visible": true
+    },
+    {
+      "id": "date",
+      "role": "date",
+      "content": "June 14, 2019",
+      "fontId": "montserrat",
+      "weight": 400,
+      "italic": false,
+      "sizeDu": 20,
+      "letterSpacing": 0.2,
+      "uppercase": true,
+      "color": "#1F1F1F",
+      "align": "center",
+      "slot": "bottom",
+      "order": 2,
+      "offsetDu": [
+        0,
+        0
+      ],
+      "visible": true
+    },
+    {
+      "id": "coords",
+      "role": "coordinates",
+      "content": "48.8583° N, 2.3375° E",
+      "fontId": "montserrat",
+      "weight": 400,
+      "italic": false,
+      "sizeDu": 15,
+      "letterSpacing": 0.15,
+      "uppercase": false,
+      "color": "#1F1F1F",
+      "align": "center",
+      "slot": "bottom",
+      "order": 3,
+      "offsetDu": [
+        0,
+        0
+      ],
+      "visible": true
+    }
+  ],
+  "attribution": {
+    "corner": "bottom-right"
+  }
+}

@@ -1,0 +1,22 @@
+name: DAST (OWASP ZAP baseline)
+
+# Nightly passive scan of staging (plan §10). Set STAGING_URL in repository variables.
+on:
+  schedule: [{ cron: "30 2 * * *" }]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap:
+    if: vars.STAGING_URL != ''
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ vars.STAGING_URL }}
+          rules_file_name: .zap/rules.tsv
+          allow_issue_writing: true

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^typecheck"
+      ]
+    },
+    "test": {
+      "dependsOn": [],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "@mapmory/renderer#dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": [
+        "@mapmory/print-page#build"
+      ]
+    },
+    "@mapmory/renderer#test": {
+      "dependsOn": [
+        "@mapmory/print-page#build"
+      ],
+      "outputs": []
+    },
+    "test:integration": {
+      "cache": false
+    }
+  }
+}

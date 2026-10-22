@@ -1,0 +1,23 @@
+{
+  "name": "@mapmory/poster-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@maplibre/maplibre-gl-style-spec": "^26.4.4",
+    "@mapmory/design-schema": "workspace:*",
+    "@mapmory/fonts": "workspace:*",
+    "@mapmory/themes": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "fast-check": "^4.10.2"
+  }
+}

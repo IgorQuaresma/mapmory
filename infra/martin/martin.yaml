@@ -1,0 +1,8 @@
+listen_addresses: '0.0.0.0:3000'
+web_ui: disable
+pmtiles:
+  sources:
+    basemap: /tiles/dev.pmtiles
+# Label glyphs are generated on the fly from the same OFL font files used for poster text (plan §7.4).
+fonts:
+  - /fonts

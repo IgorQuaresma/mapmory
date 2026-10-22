@@ -1,0 +1,8 @@
+title = "Mapmory gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Development-only credentials for local containers (infra/docker-compose.yml, infra/postgres/init.sql)."
+paths = ['''infra/docker-compose\.yml''', '''infra/postgres/init\.sql''', '''infra/seaweedfs/s3\.json''', '''\.env\.example''']

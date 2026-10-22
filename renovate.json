@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":pinDevDependencies", "docker:pinDigests", "helpers:pinGitHubActionDigests"],
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "Preview and export renderers must move together; re-run `pnpm --filter @mapmory/renderer parity` (ADR 0001).",
+      "groupName": "maplibre renderers",
+      "matchPackageNames": ["maplibre-gl", "@maplibre/maplibre-gl-native", "@maplibre/maplibre-gl-style-spec"]
+    },
+    {
+      "description": "The Playwright npm package and its Docker base image must match.",
+      "groupName": "playwright",
+      "matchPackageNames": ["playwright", "@playwright/test", "mcr.microsoft.com/playwright"]
+    },
+    {
+      "description": "Node 22 is pinned because the MapLibre Native prebuilt binaries target it (ADR 0005).",
+      "matchPackageNames": ["node"],
+      "allowedVersions": "<23"
+    }
+  ]
+}

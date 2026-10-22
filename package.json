@@ -1,0 +1,36 @@
+{
+  "name": "mapmory",
+  "private": true,
+  "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@mapmory/api --filter=@mapmory/renderer --filter=@mapmory/web",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "setup:tiles": "bash infra/scripts/fetch-dev-tiles.sh",
+    "db:migrate": "pnpm --filter @mapmory/api db:migrate",
+    "test:integration": "pnpm --filter @mapmory/api test:integration",
+    "test:e2e": "pnpm --filter @mapmory/web e2e",
+    "setup": "pnpm infra:up && pnpm setup:tiles && pnpm db:migrate && pnpm --filter @mapmory/renderer exec playwright install chromium",
+    "fonts:build": "python3 packages/fonts/scripts/build-static.py"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  },
+  "type": "module"
+}

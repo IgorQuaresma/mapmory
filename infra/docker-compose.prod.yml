@@ -1,0 +1,105 @@
+# Single-region EU production footprint (plan §11). Secrets come from .env.production, decrypted from
+# infra/secrets/production.enc.env with SOPS at deploy time — never committed in clear.
+name: mapmory
+
+x-app-env: &app-env
+  env_file: ../.env.production
+  restart: unless-stopped
+  read_only: true
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+
+services:
+  edge:
+    image: ghcr.io/${IMAGE_OWNER:-mapmory}/mapmory-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+    volumes: [caddy-data:/data, caddy-config:/config]
+    networks: [edge]
+    depends_on: [api, martin]
+
+  api:
+    <<: *app-env
+    image: ghcr.io/${IMAGE_OWNER:-mapmory}/mapmory-api:${IMAGE_TAG:-latest}
+    environment:
+      API_HOST: 0.0.0.0
+      TRUST_PROXY: "true"
+    tmpfs: ["/tmp"]
+    networks: [edge, internal]
+    deploy: { replicas: 2, resources: { limits: { cpus: "1", memory: 768M } } }
+    depends_on: [postgres, redis]
+
+  migrate:
+    <<: *app-env
+    image: ghcr.io/${IMAGE_OWNER:-mapmory}/mapmory-api:${IMAGE_TAG:-latest}
+    restart: "no"
+    command: ["node", "dist/migrate.js"]
+    networks: [internal]
+    depends_on: [postgres]
+
+  renderer-small:
+    <<: *app-env
+    image: ghcr.io/${IMAGE_OWNER:-mapmory}/mapmory-renderer:${IMAGE_TAG:-latest}
+    environment: { RENDER_QUEUES: export-small }
+    tmpfs: ["/tmp:size=2g"]
+    shm_size: 1g
+    networks: [internal]
+    deploy: { replicas: 1, resources: { limits: { cpus: "4", memory: 6G } } }
+
+  renderer-large:
+    <<: *app-env
+    image: ghcr.io/${IMAGE_OWNER:-mapmory}/mapmory-renderer:${IMAGE_TAG:-latest}
+    environment: { RENDER_QUEUES: export-large }
+    tmpfs: ["/tmp:size=6g"]
+    shm_size: 2g
+    networks: [internal]
+    deploy: { replicas: 1, resources: { limits: { cpus: "8", memory: 16G } } }
+
+  martin:
+    image: ghcr.io/maplibre/martin:latest
+    restart: unless-stopped
+    command: ["--config", "/config/martin.yaml"]
+    read_only: true
+    volumes:
+      - ./martin/martin.yaml:/config/martin.yaml:ro
+      - ${TILES_DIR:-/srv/mapmory/tiles}:/tiles:ro
+      - ../packages/fonts/ttf:/fonts:ro
+    networks: [edge, internal]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: ../.env.production
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [internal]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"], interval: 10s, retries: 10 }
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD}"]
+    volumes: [redisdata:/data]
+    networks: [internal]
+
+  # Optional self-hosted geocoder (plan §3). Needs the Photon planet index; see docs/ops.md.
+  photon:
+    profiles: ["photon"]
+    image: ghcr.io/rtuszik/photon-docker:latest
+    restart: unless-stopped
+    volumes: [photondata:/photon/data]
+    networks: [internal]
+
+networks:
+  edge:
+  internal:
+    internal: true
+
+volumes:
+  caddy-data:
+  caddy-config:
+  pgdata:
+  redisdata:
+  photondata:

@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+onlyBuiltDependencies:
+  - "@maplibre/maplibre-gl-native"
+  - esbuild
+  - sharp
