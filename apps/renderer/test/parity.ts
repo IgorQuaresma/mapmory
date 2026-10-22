@@ -67,7 +67,10 @@ try {
     await writeFile(path.join(outDir, `${themeId}-diff.png`), PNG.sync.write(diff));
     const ok = ratio <= threshold;
     failed ||= !ok;
-    console.log(`${ok ? 'PASS' : 'FAIL'} ${themeId.padEnd(12)} mismatch ${(ratio * 100).toFixed(2)}%`);
+    const line = `${ok ? 'PASS' : 'FAIL'} ${themeId.padEnd(12)} mismatch ${(ratio * 100).toFixed(2)}%`;
+    console.log(line);
+    // On GitHub Actions, surface each result as an annotation so it is visible on the run page.
+    if (process.env.GITHUB_ACTIONS) console.log(`::${ok ? 'notice' : 'error'} title=parity${withLabels ? ' (labels)' : ''}::${line}`);
   }
 } finally {
   await closeBrowser();
