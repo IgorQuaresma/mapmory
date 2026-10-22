@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { MailCheck } from 'lucide-react';
+import { MailCheck } from './icons';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, isApiError } from '../api';

@@ -3,7 +3,7 @@ import { FONT_CATALOG, clampWeight } from '@mapmory/fonts';
 import { duToPt, preflight, ptToDu, type PreflightIssue } from '@mapmory/poster-core';
 import { createCanvasMeasure, loadDesignFonts } from '@mapmory/poster-react';
 import { getTheme } from '@mapmory/themes';
-import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, ArrowDown, ArrowUp, ChevronDown, Eye, EyeOff, Plus, Trash2, TriangleAlert } from '../../../components/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ColorField, Field, IconButton, Select, Slider, Switch, TextInput, ToggleGroup, cx } from '../../../components/ui';

@@ -1,6 +1,6 @@
 import type { GeocodeResult } from '@mapmory/design-schema';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Search } from 'lucide-react';
+import { MapPin, Search } from './icons';
 import { useId, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api';

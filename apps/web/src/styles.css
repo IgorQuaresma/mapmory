@@ -1,27 +1,40 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #1c2430;
-  --color-ink-soft: #4a5565;
-  --color-paper: #faf7f2;
-  --color-sand: #f1ebe1;
-  --color-line: #e3dccf;
-  --color-accent: #ad4523;
-  --color-accent-strong: #8f381c;
-  --color-focus: #2563eb;
-  --color-ok: #2f7d4f;
-  --color-warn: #9a6400;
+  /* "Postcard" palette. Contrast on cloud white: ink 15.7:1, cobalt 7.0:1, deep coral 5.1:1, field border 3.4:1. */
+  --color-paper: #f5f6fa;        /* cloud white: page background */
+  --color-ink: #1b1a33;          /* ink navy: main text */
+  --color-ink-soft: #55546e;     /* slate violet: secondary text (6.8:1) */
+  --color-brand: #2e3fd6;        /* cobalt: primary actions, selected states (7.5:1 with white) */
+  --color-brand-strong: #2232b8; /* hover / pressed */
+  --color-accent: #ff5c7a;       /* coral: decorative accents, icon duotone, progress (not for text) */
+  --color-accent-strong: #c42b4b;/* deep coral: accent text and links */
+  --color-sun: #ffc93c;          /* sunflower: highlights (ink text on it: 11:1) */
+  --color-lav: #e8e6f8;          /* lavender mist: map and preview backgrounds */
+  --color-sand: #edecf7;         /* soft lavender surface for hovers and selected rows */
+  --color-line: #cfcee0;         /* haze: dividers and card edges */
+  --color-field: #8e8ca8;        /* dusk grey: form control borders (WCAG 1.4.11, 3:1) */
+  --color-focus: #2e3fd6;
+  --color-ok: #1e7a55;
+  --color-warn: #7a5200;
   --color-bad: #b42318;
-  --font-sans: 'Mapmory Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Mapmory Playfair Display', Georgia, serif;
-  --shadow-poster: 0 1px 2px rgb(28 36 48 / 0.08), 0 12px 32px -8px rgb(28 36 48 / 0.28);
+  --font-sans: 'DM Sans Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --shadow-poster: 0 2px 4px rgb(27 26 51 / 0.08), 0 18px 36px -10px rgb(46 63 214 / 0.32);
 }
 
 @layer base {
   html { color: var(--color-ink); background: var(--color-paper); }
   body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  /* Bricolage Grotesque carries the personality; set it heavy and slightly tight. */
+  .font-display { font-weight: 750; letter-spacing: -0.02em; }
+  /* Duotone icons: the light Phosphor layer is tinted coral (or per-context via --icon-duo). */
+  .mm-icon [opacity='0.2'] { fill: var(--icon-duo, var(--color-accent)); opacity: 0.5; }
+  /* At 16 px and below a lighter fill keeps small controls crisp. */
+  .mm-icon:is(.size-3, .size-3\.5, .size-4) [opacity='0.2'] { opacity: 0.3; }
   :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-  ::selection { background: #f4b86066; }
+  ::selection { background: #ffc93c80; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -36,16 +49,18 @@
 /* MapLibre canvas focus ring (keyboard pan/zoom). */
 .maplibregl-canvas:focus-visible { outline: 3px solid var(--color-focus); outline-offset: -3px; }
 
+/* Riso-style paper grain behind the poster preview. */
 .checker {
-  background-image: linear-gradient(45deg, #0000000d 25%, transparent 25%), linear-gradient(-45deg, #0000000d 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #0000000d 75%), linear-gradient(-45deg, transparent 75%, #0000000d 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-image: radial-gradient(rgb(27 26 51 / 0.07) 1px, transparent 1.2px);
+  background-size: 7px 7px;
 }
+
+/* "Airmail" card edge. */
+.airmail { border: 1.5px dashed var(--color-line); }
 
 @keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
 .skeleton {
-  background: linear-gradient(90deg, #ece6dc 25%, #f6f2ea 50%, #ece6dc 75%);
+  background: linear-gradient(90deg, #e4e2f5 25%, #f1f0fa 50%, #e4e2f5 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite linear;
 }

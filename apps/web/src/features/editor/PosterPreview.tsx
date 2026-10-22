@@ -1,7 +1,7 @@
 import type { Design } from '@mapmory/design-schema';
 import { buildStyle, computeLayout, fromScreen, mmToDu, styleUpdates, type PosterLayout, type Rect } from '@mapmory/poster-core';
 import { Poster } from '@mapmory/poster-react';
-import { Maximize, Minus, Plus, ScanLine } from 'lucide-react';
+import { Maximize, Minus, Plus, ScanLine } from '../../components/icons';
 import { useCallback, useMemo, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapCanvas, type MovePhase, type MapView } from '../../components/MapCanvas';
@@ -41,7 +41,7 @@ export function PosterPreview() {
   };
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-[#e9e4da]">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-lav">
       <div ref={areaRef} className={cx('checker relative min-h-0 flex-1', ui.previewZoom > 1 ? 'overflow-auto' : 'overflow-hidden')}>
         {fit > 0 && (
           <div
@@ -87,7 +87,7 @@ export function PosterPreview() {
             label={ui.showGuides ? t('editor.preview.hideGuides') : t('editor.preview.showGuides')}
             aria-pressed={ui.showGuides}
             onClick={() => setUi({ showGuides: !ui.showGuides })}
-            className={cx(ui.showGuides && 'bg-ink text-white hover:bg-ink')}
+            className={cx(ui.showGuides && 'bg-brand text-white hover:bg-brand')}
           >
             <ScanLine aria-hidden className="size-4" />
           </IconButton>
@@ -208,14 +208,14 @@ function Guides({ design, layout }: { design: Design; layout: PosterLayout }) {
       viewBox={`0 0 ${w} ${h}`}
       data-testid="guides"
     >
-      <path d={`M${-b} ${-b}H${w + b}V${h + b}H${-b}Z M0 0V${h}H${w}V0Z`} fill="#dc262633" fillRule="evenodd" />
-      <rect x={-b} y={-b} width={w + 2 * b} height={h + 2 * b} fill="none" stroke="#dc2626" strokeWidth={1.5} strokeDasharray="6 4" />
-      <rect x={0} y={0} width={w} height={h} fill="none" stroke="#111827" strokeWidth={1} />
-      <rect x={s.x} y={s.y} width={s.w} height={s.h} fill="none" stroke="#2563eb" strokeWidth={1.5} strokeDasharray="4 4" />
-      <text x={s.x + 4} y={s.y + label + 2} fontSize={label} fill="#2563eb" fontFamily="sans-serif">
+      <path d={`M${-b} ${-b}H${w + b}V${h + b}H${-b}Z M0 0V${h}H${w}V0Z`} fill="#c42b4b33" fillRule="evenodd" />
+      <rect x={-b} y={-b} width={w + 2 * b} height={h + 2 * b} fill="none" stroke="#c42b4b" strokeWidth={1.5} strokeDasharray="6 4" />
+      <rect x={0} y={0} width={w} height={h} fill="none" stroke="#1b1a33" strokeWidth={1} />
+      <rect x={s.x} y={s.y} width={s.w} height={s.h} fill="none" stroke="#2e3fd6" strokeWidth={1.5} strokeDasharray="4 4" />
+      <text x={s.x + 4} y={s.y + label + 2} fontSize={label} fill="#2e3fd6" fontFamily="sans-serif">
         {t('editor.preview.safeZone')}
       </text>
-      <text x={-b + 2} y={-b - 4} fontSize={label} fill="#dc2626" fontFamily="sans-serif">
+      <text x={-b + 2} y={-b - 4} fontSize={label} fill="#c42b4b" fontFamily="sans-serif">
         {t('editor.preview.bleed', { mm: GUIDE_BLEED_MM })}
       </text>
     </svg>

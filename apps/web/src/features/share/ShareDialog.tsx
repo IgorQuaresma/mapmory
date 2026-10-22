@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, Link2Off } from 'lucide-react';
+import { Check, Copy, Link2Off } from '../../components/icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, type ShareLink } from '../../api';

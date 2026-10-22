@@ -1,7 +1,7 @@
 import { LABEL_LANGUAGES, LAYER_KEYS, PALETTE_KEYS, type LabelLanguage, type PaletteKey } from '@mapmory/design-schema';
 import { applyTheme } from '@mapmory/poster-core';
 import { THEME_LIST } from '@mapmory/themes';
-import { Check } from 'lucide-react';
+import { Check } from '../../../components/icons';
 import { useTranslation } from 'react-i18next';
 import { Callout, ColorField, Field, SectionTitle, Select, Slider, Switch, cx } from '../../../components/ui';
 import { useDesign } from '../../../store/editor';
@@ -31,14 +31,14 @@ export function StylePanel() {
                 onClick={() => replaceDesign((d) => applyTheme(d, theme.id))}
                 className={cx(
                   'group relative flex flex-col items-center gap-1 rounded-lg border p-1.5 text-[11px] font-medium transition',
-                  selected ? 'border-ink ring-2 ring-ink' : 'border-line hover:border-ink-soft',
+                  selected ? 'border-brand ring-2 ring-brand' : 'border-line hover:border-ink-soft',
                 )}
                 data-testid={`theme-${theme.id}`}
               >
                 <ThemeSwatch theme={theme} />
                 <span className="truncate">{t(`themes.${theme.id}`)}</span>
                 {selected && (
-                  <span className="absolute right-1 top-1 rounded-full bg-ink p-0.5 text-white">
+                  <span className="absolute right-1 top-1 rounded-full bg-brand p-0.5 text-white">
                     <Check aria-hidden className="size-3" />
                   </span>
                 )}

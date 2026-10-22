@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check } from './icons';
 import { useTranslation } from 'react-i18next';
 import { cx } from './ui';
 
@@ -16,7 +16,7 @@ export function Stepper({ current }: { current: (typeof STEPS)[number] }) {
               className={cx(
                 'flex size-6 items-center justify-center rounded-full border text-xs font-semibold',
                 i < idx && 'border-ok bg-ok text-white',
-                i === idx && 'border-ink bg-ink text-white',
+                i === idx && 'border-brand bg-brand text-white',
                 i > idx && 'border-line bg-white text-ink-soft',
               )}
             >

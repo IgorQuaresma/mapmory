@@ -50,7 +50,7 @@ export default function SharedPage() {
         <Callout tone="warn" title={t('share.pageTitle')}>
           {t('share.notFound')}
         </Callout>
-        <Link to="/create" className="font-medium text-accent underline">
+        <Link to="/create" className="font-medium text-accent-strong underline">
           {t('share.makeYourOwn')}
         </Link>
       </main>
@@ -93,7 +93,7 @@ export default function SharedPage() {
           <Watermark label={t('share.watermark')} />
         </div>
       </div>
-      <Link to="/create" className="rounded-full bg-accent px-5 py-2.5 font-medium text-white hover:bg-accent-strong">
+      <Link to="/create" className="rounded-full bg-brand px-5 py-2.5 font-medium text-white hover:bg-brand-strong">
         {t('share.makeYourOwn')}
       </Link>
     </main>

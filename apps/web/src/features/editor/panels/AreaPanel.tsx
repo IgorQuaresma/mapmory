@@ -1,6 +1,6 @@
 import { MAP_SHAPES, type MapShape } from '@mapmory/design-schema';
 import { offsetCenter, shapePath } from '@mapmory/poster-core';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Compass, Crosshair } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Compass, Crosshair } from '../../../components/icons';
 import { useTranslation } from 'react-i18next';
 import { Button, ColorField, IconButton, SectionTitle, Slider, Switch, ToggleGroup } from '../../../components/ui';
 import { useDesign, useEditor } from '../../../store/editor';

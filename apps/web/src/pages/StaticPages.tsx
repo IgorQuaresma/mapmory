@@ -37,7 +37,7 @@ export function NotFoundPage() {
     <main id="main" className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-20">
       <h1 className="font-display text-4xl">{t('notFound.title')}</h1>
       <p className="text-ink-soft">{t('notFound.body')}</p>
-      <Link to="/" className="font-medium text-accent underline">
+      <Link to="/" className="font-medium text-accent-strong underline">
         {t('notFound.home')}
       </Link>
     </main>

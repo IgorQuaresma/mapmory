@@ -1,6 +1,6 @@
 import { CORNERS, CUSTOM_PAPER_LIMITS_MM, FRAME_STYLES, PAPER_IDS, PAPER_SIZES, type Corner, type FrameStyle, type PaperId } from '@mapmory/design-schema';
 import { changePaper, pageHeightDu } from '@mapmory/poster-core';
-import { RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { RectangleHorizontal, RectangleVertical } from '../../../components/icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ColorField, Field, SectionTitle, Select, Slider, Switch, TextInput, ToggleGroup } from '../../../components/ui';

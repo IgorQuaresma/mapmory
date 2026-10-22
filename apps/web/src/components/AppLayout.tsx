@@ -1,4 +1,4 @@
-import { Globe } from 'lucide-react';
+import { Globe } from './icons';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, Outlet, ScrollRestoration } from 'react-router';
 import { SUPPORTED_LANGUAGES, type Language } from '../i18n';
@@ -8,9 +8,13 @@ import { cx } from './ui';
 export function Logo() {
   return (
     <span className="flex items-center gap-2 font-display text-xl">
-      <svg viewBox="0 0 24 24" className="size-7" aria-hidden>
-        <rect width="24" height="24" rx="6" fill="#1c2430" />
-        <path fill="#f4b860" d="M12 4.5c-3.04 0-5.5 2.46-5.5 5.5 0 4.12 5.5 9.5 5.5 9.5s5.5-5.38 5.5-9.5c0-3.04-2.46-5.5-5.5-5.5zm0 7.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+      {/* Postmark stamp: perforated edge, cancellation ring, coral pin. */}
+      <svg viewBox="0 0 40 40" className="size-8" aria-hidden>
+        <rect x="3" y="3" width="34" height="34" fill="#ffc93c" />
+        <rect x="3" y="3" width="34" height="34" fill="none" stroke="#2e3fd6" strokeWidth="2" strokeDasharray="3 2.2" />
+        <circle cx="20" cy="20" r="10.5" fill="none" stroke="#2e3fd6" strokeWidth="1.6" />
+        <path d="M20 13.5c-2.6 0-4.6 2-4.6 4.6 0 3.5 4.6 8 4.6 8s4.6-4.5 4.6-8c0-2.6-2-4.6-4.6-4.6z" fill="#ff5c7a" />
+        <circle cx="20" cy="18.2" r="1.6" fill="#ffc93c" />
       </svg>
       Mapmory
     </span>
@@ -41,7 +45,7 @@ export function LanguageSwitch() {
 export function AppLayout() {
   const { t } = useTranslation();
   const session = useSession();
-  const link = ({ isActive }: { isActive: boolean }) => cx('rounded-md px-2 py-1 text-sm font-medium hover:bg-sand', isActive && 'text-accent');
+  const link = ({ isActive }: { isActive: boolean }) => cx('rounded-md px-2 py-1 text-sm font-medium hover:bg-sand', isActive && 'text-accent-strong');
   return (
     <div className="flex min-h-dvh flex-col">
       <a href="#main" className="sr-only z-50 rounded bg-ink px-3 py-2 text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3">

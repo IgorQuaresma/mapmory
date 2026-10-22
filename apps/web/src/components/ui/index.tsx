@@ -6,7 +6,7 @@ import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { clsx } from 'clsx';
-import { Check, ChevronDown, Loader2, X } from 'lucide-react';
+import { Check, ChevronDown, Loader2, X } from '../icons';
 import {
   forwardRef,
   useId,
@@ -31,7 +31,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-strong shadow-sm',
+  primary: 'bg-brand text-white hover:bg-brand-strong shadow-sm [--icon-duo:var(--color-sun)]',
   secondary: 'bg-white text-ink border border-line hover:bg-sand',
   ghost: 'text-ink hover:bg-sand',
   danger: 'bg-bad text-white hover:bg-red-800',
@@ -131,7 +131,7 @@ export function Field({
 }
 
 const inputCls =
-  'w-full rounded-lg border border-line bg-white px-3 text-sm text-ink placeholder:text-ink-soft/70 focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:bg-sand';
+  'w-full rounded-lg border border-field bg-white px-3 text-sm text-ink placeholder:text-ink-soft/70 focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:bg-sand';
 
 export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function TextInput(
   { className, ...rest },
@@ -271,12 +271,12 @@ export function Slider({
         className="relative flex h-5 w-full touch-none select-none items-center"
       >
         <SliderPrimitive.Track className="relative h-1.5 grow rounded-full bg-line">
-          <SliderPrimitive.Range className="absolute h-full rounded-full bg-ink" />
+          <SliderPrimitive.Range className="absolute h-full rounded-full bg-brand" />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
           aria-labelledby={`${id}-label`}
           aria-valuetext={format(value)}
-          className="block size-5 rounded-full border-2 border-ink bg-white shadow focus-visible:ring-4 focus-visible:ring-focus/40"
+          className="block size-5 rounded-full border-2 border-brand bg-white shadow focus-visible:ring-4 focus-visible:ring-focus/40"
         />
       </SliderPrimitive.Root>
       {hint && <p className="text-xs text-ink-soft">{hint}</p>}
@@ -300,7 +300,7 @@ export function Switch({ label, checked, onChange, hint }: { label: ReactNode; c
         id={id}
         checked={checked}
         onCheckedChange={onChange}
-        className="relative h-6 w-11 shrink-0 rounded-full bg-line transition-colors data-[state=checked]:bg-ink"
+        className="relative h-6 w-11 shrink-0 rounded-full bg-field transition-colors data-[state=checked]:bg-brand"
       >
         <SwitchPrimitive.Thumb className="block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[22px]" />
       </SwitchPrimitive.Root>
@@ -337,7 +337,7 @@ export function ToggleGroup<T extends string>({
           value={o.value}
           title={o.title}
           aria-label={o.title}
-          className="flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg border border-line bg-white px-3 text-sm hover:bg-sand data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:text-white"
+          className="flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg border border-field bg-white px-3 text-sm hover:bg-sand data-[state=on]:border-brand data-[state=on]:bg-brand data-[state=on]:text-white"
         >
           {o.label}
         </ToggleGroupPrimitive.Item>
@@ -373,7 +373,7 @@ export function ColorField({
       <div className={clsx('flex items-center gap-2', compact && 'flex-col items-start gap-1')}>
         <PopoverPrimitive.Trigger
           aria-label={t('ui.pickColor', { name: label })}
-          className="size-9 shrink-0 rounded-lg border border-line shadow-inner"
+          className="size-9 shrink-0 rounded-lg border border-field shadow-inner"
           style={{ background: value }}
         />
         {!compact && (
@@ -452,10 +452,10 @@ export function Dialog({
 
 export function Callout({ tone = 'info', title, children, className }: { tone?: 'info' | 'warn' | 'error' | 'ok'; title?: ReactNode; children?: ReactNode; className?: string }) {
   const tones = {
-    info: 'border-sky-200 bg-sky-50 text-sky-950',
-    warn: 'border-amber-200 bg-amber-50 text-amber-950',
+    info: 'border-brand/25 bg-lav text-ink [--icon-duo:var(--color-brand)]',
+    warn: 'border-sun bg-sun/25 text-warn [--icon-duo:var(--color-sun)]',
     error: 'border-red-200 bg-red-50 text-red-950',
-    ok: 'border-emerald-200 bg-emerald-50 text-emerald-950',
+    ok: 'border-ok/30 bg-ok/10 text-ok [--icon-duo:var(--color-ok)]',
   };
   return (
     <div role={tone === 'error' ? 'alert' : undefined} className={clsx('rounded-xl border px-4 py-3 text-sm', tones[tone], className)}>

@@ -2,7 +2,7 @@ import { MOODS, type GeocodeResult, type Interpretation, type Mood } from '@mapm
 import { boundsOf, buildStyle, formatCoordinates, generateDraft } from '@mapmory/poster-core';
 import { MOOD_THEME } from '@mapmory/themes';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, MapPin, MapPinPlus, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin, MapPinPlus, Star, Trash2 } from '../../components/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -178,7 +178,7 @@ export default function PlacePage() {
 
         <div className="flex flex-col gap-3">
           <div
-            className={cx('relative h-[360px] overflow-hidden rounded-2xl border border-line bg-sand lg:h-[560px]', pinMode && 'ring-4 ring-accent/40 [&_canvas]:cursor-crosshair')}
+            className={cx('relative h-[360px] overflow-hidden rounded-2xl border border-line bg-lav lg:h-[560px]', pinMode && 'ring-4 ring-accent/40 [&_canvas]:cursor-crosshair')}
           >
             {styleSpec && (
               <div className="absolute inset-0">
@@ -292,7 +292,7 @@ function DetailsForm() {
       </Field>
       {w.memoryText && !w.manual && (
         <label className="flex items-start gap-3 text-sm">
-          <input type="checkbox" className="mt-1 size-4 accent-ink" checked={w.keepMemoryText} onChange={(e) => w.patch({ keepMemoryText: e.target.checked })} />
+          <input type="checkbox" className="mt-1 size-4 accent-brand" checked={w.keepMemoryText} onChange={(e) => w.patch({ keepMemoryText: e.target.checked })} />
           <span>
             {t('place.keepMemory')}
             <span className="block text-xs text-ink-soft">{t('place.keepMemoryHint')}</span>
@@ -320,7 +320,7 @@ function useMapPins(map: MapLibreMap | null, places: GeocodeResult[]) {
       svg.setAttribute('height', '100%');
       const path = document.createElementNS(svgNs, 'path');
       path.setAttribute('d', 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z');
-      path.setAttribute('fill', i === 0 ? '#ad4523' : '#1c2430');
+      path.setAttribute('fill', i === 0 ? '#ff5c7a' : '#2e3fd6');
       path.setAttribute('stroke', '#fff');
       path.setAttribute('stroke-width', '1.2');
       svg.appendChild(path);

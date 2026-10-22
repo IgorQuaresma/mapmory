@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, LogOut, Plus, Trash2 } from 'lucide-react';
+import { Download, LogOut, Plus, Trash2 } from '../../components/icons';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -58,7 +58,7 @@ export default function AccountPage() {
           <SectionTitle as="h2">
             <span id="posters">{t('account.posters')}</span>
           </SectionTitle>
-          <Link to="/create" className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
+          <Link to="/create" className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-strong hover:underline">
             <Plus aria-hidden className="size-4" />
             {t('account.newPoster')}
           </Link>
@@ -67,7 +67,7 @@ export default function AccountPage() {
         {projects.data?.length === 0 && (
           <div className="rounded-2xl border border-dashed border-line p-8 text-center">
             <p className="text-ink-soft">{t('account.noPosters')}</p>
-            <Link to="/create" className="mt-3 inline-block font-medium text-accent underline">
+            <Link to="/create" className="mt-3 inline-block font-medium text-accent-strong underline">
               {t('landing.cta')}
             </Link>
           </div>

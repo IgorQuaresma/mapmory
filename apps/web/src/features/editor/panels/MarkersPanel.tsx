@@ -1,7 +1,7 @@
 import { MARKER_ICONS, MAX_MARKERS, type MarkerIcon } from '@mapmory/design-schema';
 import { MARKER_ICON_PATHS, computeLayout, formatCoordinates, fromScreen, toScreen } from '@mapmory/poster-core';
 import { getTheme } from '@mapmory/themes';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Crosshair, Plus, Trash2 } from '../../../components/icons';
 import { useTranslation } from 'react-i18next';
 import { PlaceSearch } from '../../../components/PlaceSearch';
 import { Button, ColorField, IconButton, SectionTitle, Slider, ToggleGroup, cx } from '../../../components/ui';
@@ -61,7 +61,7 @@ export function MarkersPanel() {
                 onClick={() => setUi({ selectedMarkerId: m.id })}
                 className={cx(
                   'flex flex-1 items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm',
-                  selected?.id === m.id ? 'border-ink bg-sand' : 'border-line bg-white hover:bg-sand',
+                  selected?.id === m.id ? 'border-brand bg-sand' : 'border-line bg-white hover:bg-sand',
                 )}
               >
                 <MarkerIconSvg icon={m.icon} color={m.color} />

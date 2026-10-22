@@ -1,6 +1,6 @@
 import * as Tabs from '@radix-ui/react-tabs';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Check, CloudOff, Download, Loader2, Redo2, RotateCcw, Share2, TriangleAlert, Undo2 } from 'lucide-react';
+import { ArrowLeft, Check, CloudOff, Download, Loader2, Redo2, RotateCcw, Share2, TriangleAlert, Undo2 } from '../../components/icons';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -76,7 +76,7 @@ function EditorSkeleton() {
             ))}
           </div>
         </div>
-        <div className="flex flex-1 items-center justify-center bg-[#e9e4da]">
+        <div className="flex flex-1 items-center justify-center bg-lav">
           <div className="skeleton aspect-[1/1.414] h-[70%] rounded shadow" />
           <span className="sr-only" role="status">
             {t('editor.loading')}
@@ -121,7 +121,7 @@ function Editor({ projectId, draft, onDraftHandled }: { projectId: string; draft
     <div className="flex h-dvh flex-col bg-paper">
       <TopBar projectId={projectId} />
       {draft && (
-        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-950" role="status">
+        <div className="border-b border-sun bg-sun/25 px-4 py-2 text-sm text-warn" role="status">
           <span>{t('editor.draft.found')}</span>
           <Button
             size="sm"

@@ -1,6 +1,6 @@
 import { MAX_MEMORY_TEXT } from '@mapmory/design-schema';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowRight, Search, Sparkles } from 'lucide-react';
+import { ArrowRight, Search, Sparkles } from '../../components/icons';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';

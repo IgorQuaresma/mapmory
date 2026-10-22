@@ -1,5 +1,5 @@
 import type { DraftInput } from '@mapmory/design-schema';
-import { ArrowRight, Download, Lock, MapPinned, PenLine, Palette, ShieldCheck, Trash2 } from 'lucide-react';
+import { ArrowRight, Download, Lock, MapPinned, PenLine, Palette, ShieldCheck, Trash2 } from '../components/icons';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ExamplePoster } from '../components/ExamplePoster';
@@ -18,11 +18,11 @@ export default function LandingPage() {
     <main id="main">
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]">
         <div className="flex flex-col gap-6">
-          <p className="w-fit rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink-soft">{t('landing.kicker')}</p>
+          <p className="w-fit rounded-full bg-sun px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">{t('landing.kicker')}</p>
           <h1 className="font-display text-4xl leading-tight sm:text-6xl">{t('landing.title')}</h1>
           <p className="max-w-xl text-lg text-ink-soft">{t('landing.lead')}</p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link to="/create" className="inline-flex h-12 items-center gap-2 rounded-lg bg-accent px-6 font-medium text-white shadow-sm hover:bg-accent-strong" data-testid="cta-create">
+            <Link to="/create" className="inline-flex h-12 items-center gap-2 rounded-lg bg-brand px-6 font-medium text-white shadow-sm hover:bg-brand-strong [--icon-duo:var(--color-sun)]" data-testid="cta-create">
               {t('landing.cta')}
               <ArrowRight aria-hidden className="size-4" />
             </Link>
@@ -54,8 +54,8 @@ export default function LandingPage() {
               { icon: Palette, key: 'design' },
               { icon: Download, key: 'print' },
             ].map(({ icon: Icon, key }, i) => (
-              <li key={key} className="flex flex-col gap-2">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-sand">
+              <li key={key} className="airmail flex flex-col gap-2 rounded-2xl bg-paper p-5">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-sun/40 text-brand">
                   <Icon aria-hidden className="size-5" />
                 </span>
                 <h3 className="font-semibold">

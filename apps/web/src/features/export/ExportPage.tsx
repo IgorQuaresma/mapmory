@@ -10,7 +10,7 @@ import {
 import { estimateFileSizeMb, exportGeometry, preflight } from '@mapmory/poster-core';
 import { createCanvasMeasure, loadDesignFonts } from '@mapmory/poster-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CircleCheck, CircleX, Download, Info, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, CircleCheck, CircleX, Download, Info, TriangleAlert } from '../../components/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
@@ -104,8 +104,8 @@ export default function ExportPage() {
               <SectionTitle as="h2">{t('export.format')}</SectionTitle>
               <div role="radiogroup" aria-label={t('export.format')} className="grid gap-2 sm:grid-cols-2">
                 {EXPORT_FORMATS.map((f: ExportFormat) => (
-                  <label key={f} className={cx('flex cursor-pointer items-start gap-3 rounded-xl border p-3', options.format === f ? 'border-ink bg-sand' : 'border-line')}>
-                    <input type="radio" name="format" value={f} checked={options.format === f} onChange={() => set({ format: f })} className="mt-1 accent-ink" />
+                  <label key={f} className={cx('flex cursor-pointer items-start gap-3 rounded-xl border p-3', options.format === f ? 'border-brand bg-sand' : 'border-field')}>
+                    <input type="radio" name="format" value={f} checked={options.format === f} onChange={() => set({ format: f })} className="mt-1 accent-brand" />
                     <span>
                       <span className="font-medium">{t(`export.formats.${f}.name`)}</span>
                       <span className="block text-xs text-ink-soft">{t(`export.formats.${f}.desc`)}</span>
@@ -237,7 +237,7 @@ export default function ExportPage() {
                         <span className="block text-xs text-ink-soft">{new Date(e.createdAt).toLocaleString(i18n.language)}</span>
                       </span>
                       {e.status === 'done' && e.downloadUrl ? (
-                        <a className="text-sm font-medium text-accent underline" href={e.downloadUrl} download>
+                        <a className="text-sm font-medium text-accent-strong underline" href={e.downloadUrl} download>
                           {t('export.download')}
                         </a>
                       ) : (
@@ -275,7 +275,7 @@ function JobStatus({ job }: { job: ExportJob }) {
           <a
             href={job.downloadUrl}
             download={`mapmory-poster.${ext}`}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-ok px-6 font-medium text-white hover:bg-emerald-800"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand px-6 font-medium text-white hover:bg-brand-strong [--icon-duo:var(--color-sun)]"
             data-testid="download-link"
           >
             <Download aria-hidden className="size-4" />
