@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  /* "Postcard" palette. Contrast on cloud white: ink 15.7:1, cobalt 7.0:1, deep coral 5.1:1, field border 3.4:1. */
+  /* "Postcard" palette, blue matched to the logo. Contrast on cloud white: ink 15.7:1, logo blue 5.6:1, deep coral 5.1:1, field border 3.4:1. */
   --color-paper: #f5f6fa;        /* cloud white: page background */
   --color-ink: #1b1a33;          /* ink navy: main text */
   --color-ink-soft: #55546e;     /* slate violet: secondary text (6.8:1) */
-  --color-brand: #2e3fd6;        /* cobalt: primary actions, selected states (7.5:1 with white) */
-  --color-brand-strong: #2232b8; /* hover / pressed */
+  --color-brand: #1a61b9;        /* logo blue: primary actions, selected states (6.1:1 with white) */
+  --color-brand-strong: #134c93; /* hover / pressed (8.5:1 with white) */
   --color-accent: #ff5c7a;       /* coral: decorative accents, icon duotone, progress (not for text) */
   --color-accent-strong: #c42b4b;/* deep coral: accent text and links */
   --color-sun: #ffc93c;          /* sunflower: highlights (ink text on it: 11:1) */
@@ -14,14 +14,14 @@
   --color-sand: #edecf7;         /* soft lavender surface for hovers and selected rows */
   --color-line: #cfcee0;         /* haze: dividers and card edges */
   --color-field: #8e8ca8;        /* dusk grey: form control borders (WCAG 1.4.11, 3:1) */
-  --color-focus: #2e3fd6;
+  --color-focus: #1a61b9;
   --color-ok: #1e7a55;
   --color-warn: #7a5200;
   --color-bad: #b42318;
   --font-sans: 'DM Sans Variable', 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Bricolage Grotesque Variable', 'Avenir Next', 'Segoe UI', sans-serif;
   --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-  --shadow-poster: 0 2px 4px rgb(27 26 51 / 0.08), 0 18px 36px -10px rgb(46 63 214 / 0.32);
+  --shadow-poster: 0 2px 4px rgb(27 26 51 / 0.08), 0 18px 36px -10px rgb(26 97 185 / 0.32);
 }
 
 @layer base {

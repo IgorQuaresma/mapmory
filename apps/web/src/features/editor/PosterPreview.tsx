@@ -211,8 +211,8 @@ function Guides({ design, layout }: { design: Design; layout: PosterLayout }) {
       <path d={`M${-b} ${-b}H${w + b}V${h + b}H${-b}Z M0 0V${h}H${w}V0Z`} fill="#c42b4b33" fillRule="evenodd" />
       <rect x={-b} y={-b} width={w + 2 * b} height={h + 2 * b} fill="none" stroke="#c42b4b" strokeWidth={1.5} strokeDasharray="6 4" />
       <rect x={0} y={0} width={w} height={h} fill="none" stroke="#1b1a33" strokeWidth={1} />
-      <rect x={s.x} y={s.y} width={s.w} height={s.h} fill="none" stroke="#2e3fd6" strokeWidth={1.5} strokeDasharray="4 4" />
-      <text x={s.x + 4} y={s.y + label + 2} fontSize={label} fill="#2e3fd6" fontFamily="sans-serif">
+      <rect x={s.x} y={s.y} width={s.w} height={s.h} fill="none" stroke="#1a61b9" strokeWidth={1.5} strokeDasharray="4 4" />
+      <text x={s.x + 4} y={s.y + label + 2} fontSize={label} fill="#1a61b9" fontFamily="sans-serif">
         {t('editor.preview.safeZone')}
       </text>
       <text x={-b + 2} y={-b - 4} fontSize={label} fill="#c42b4b" fontFamily="sans-serif">
