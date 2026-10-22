@@ -15,16 +15,22 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "variable"
 OUT = ROOT / "ttf"
 
-# id -> (source file, family name, weights). Must match src/index.ts FONT_CATALOG.
+# id -> (source file, family name, weights, pinned axes). Must match src/index.ts FONT_CATALOG.
+# Pinned axes override the font's defaults (e.g. a display optical size for poster titles).
 FONTS = {
-    "playfair-display": ("playfair-display.ttf", "Playfair Display", range(400, 901, 100)),
-    "montserrat": ("montserrat.ttf", "Montserrat", range(100, 901, 100)),
-    "cormorant-garamond": ("cormorant-garamond.ttf", "Cormorant Garamond", range(300, 701, 100)),
-    "inter": ("inter.ttf", "Inter", range(100, 901, 100)),
-    "josefin-sans": ("josefin-sans.ttf", "Josefin Sans", range(100, 701, 100)),
-    "noto-sans": ("noto-sans.ttf", "Noto Sans", [400]),
+    "playfair-display": ("playfair-display.ttf", "Playfair Display", range(400, 901, 100), {}),
+    "montserrat": ("montserrat.ttf", "Montserrat", range(100, 901, 100), {}),
+    "fraunces": ("fraunces.ttf", "Fraunces", range(100, 901, 100), {"opsz": 72, "SOFT": 50, "WONK": 0}),
+    "inter": ("inter.ttf", "Inter", range(100, 901, 100), {}),
+    "josefin-sans": ("josefin-sans.ttf", "Josefin Sans", range(100, 701, 100), {}),
+    "bricolage-grotesque": ("bricolage-grotesque.ttf", "Bricolage Grotesque", range(200, 801, 100), {"opsz": 72}),
+    "noto-sans": ("noto-sans.ttf", "Noto Sans", [400], {}),
 }
-STATIC_ONLY = {"great-vibes": ("great-vibes.ttf", "Great Vibes", [400])}
+# id -> (family, {weight: source file}) for fonts that only ship static files.
+STATIC_ONLY = {
+    "great-vibes": ("Great Vibes", {400: "great-vibes.ttf"}),
+    "dm-mono": ("DM Mono", {400: "dm-mono-400.ttf", 500: "dm-mono-500.ttf"}),
+}
 STYLE = {100: "Thin", 200: "ExtraLight", 300: "Light", 400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold", 800: "ExtraBold", 900: "Black"}
 
 
@@ -42,24 +48,33 @@ def set_names(font: TTFont, family: str, style: str) -> None:
 
 def main() -> None:
     OUT.mkdir(exist_ok=True)
+    expected = {f"{fid}-{w}.ttf" for fid, (_, _, ws, _) in FONTS.items() for w in ws} | {
+        f"{fid}-{w}.ttf" for fid, (_, files) in STATIC_ONLY.items() for w in files
+    }
     for old in OUT.glob("*.ttf"):
-        old.unlink()
-    for fid, (src, family, weights) in FONTS.items():
+        if old.name not in expected:
+            old.unlink()
+    for fid, (src, family, weights, pinned) in FONTS.items():
         for w in weights:
             font = TTFont(SRC / src)
             axes = {a.axisTag: a for a in font["fvar"].axes}
             location = {tag: a.defaultValue for tag, a in axes.items()}
+            location.update({k: v for k, v in pinned.items() if k in axes})
             location["wght"] = max(axes["wght"].minValue, min(axes["wght"].maxValue, w))
             static = instancer.instantiateVariableFont(font, location)
             set_names(static, family, STYLE[w])
             static["OS/2"].usWeightClass = w
+            static.recalcTimestamp = False  # deterministic output: unchanged fonts produce identical files
             static.save(OUT / f"{fid}-{w}.ttf")
             print("wrote", f"{fid}-{w}.ttf")
-    for fid, (src, family, weights) in STATIC_ONLY.items():
-        font = TTFont(SRC / src)
-        set_names(font, family, "Regular")
-        font.save(OUT / f"{fid}-400.ttf")
-        print("wrote", f"{fid}-400.ttf")
+    for fid, (family, files) in STATIC_ONLY.items():
+        for w, src in files.items():
+            font = TTFont(SRC / src)
+            set_names(font, family, STYLE[w])
+            font["OS/2"].usWeightClass = w
+            font.recalcTimestamp = False
+            font.save(OUT / f"{fid}-{w}.ttf")
+            print("wrote", f"{fid}-{w}.ttf")
 
 
 if __name__ == "__main__":

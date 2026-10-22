@@ -18,11 +18,15 @@
 @font-face { font-family: 'Mapmory Montserrat'; src: url('../../fonts/ttf/montserrat-700.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Montserrat'; src: url('../../fonts/ttf/montserrat-800.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Montserrat'; src: url('../../fonts/ttf/montserrat-900.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: block; }
-@font-face { font-family: 'Mapmory Cormorant Garamond'; src: url('../../fonts/ttf/cormorant-garamond-300.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: block; }
-@font-face { font-family: 'Mapmory Cormorant Garamond'; src: url('../../fonts/ttf/cormorant-garamond-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
-@font-face { font-family: 'Mapmory Cormorant Garamond'; src: url('../../fonts/ttf/cormorant-garamond-500.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: block; }
-@font-face { font-family: 'Mapmory Cormorant Garamond'; src: url('../../fonts/ttf/cormorant-garamond-600.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
-@font-face { font-family: 'Mapmory Cormorant Garamond'; src: url('../../fonts/ttf/cormorant-garamond-700.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-100.ttf') format('truetype'); font-weight: 100; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-200.ttf') format('truetype'); font-weight: 200; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-300.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-500.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-600.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-700.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-800.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Fraunces'; src: url('../../fonts/ttf/fraunces-900.ttf') format('truetype'); font-weight: 900; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Inter'; src: url('../../fonts/ttf/inter-100.ttf') format('truetype'); font-weight: 100; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Inter'; src: url('../../fonts/ttf/inter-200.ttf') format('truetype'); font-weight: 200; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Inter'; src: url('../../fonts/ttf/inter-300.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: block; }
@@ -40,3 +44,12 @@
 @font-face { font-family: 'Mapmory Josefin Sans'; src: url('../../fonts/ttf/josefin-sans-600.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Josefin Sans'; src: url('../../fonts/ttf/josefin-sans-700.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
 @font-face { font-family: 'Mapmory Great Vibes'; src: url('../../fonts/ttf/great-vibes-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-200.ttf') format('truetype'); font-weight: 200; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-300.ttf') format('truetype'); font-weight: 300; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-500.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-600.ttf') format('truetype'); font-weight: 600; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-700.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory Bricolage Grotesque'; src: url('../../fonts/ttf/bricolage-grotesque-800.ttf') format('truetype'); font-weight: 800; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory DM Mono'; src: url('../../fonts/ttf/dm-mono-400.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Mapmory DM Mono'; src: url('../../fonts/ttf/dm-mono-500.ttf') format('truetype'); font-weight: 500; font-style: normal; font-display: block; }

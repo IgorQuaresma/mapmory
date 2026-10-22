@@ -1,4 +1,4 @@
-import type { Design, ExportJob, ExportOptions, GeocodeResult, InterpretResponse } from '@mapmory/design-schema';
+import { migrateDesign, type Design, type ExportJob, type ExportOptions, type GeocodeResult, type InterpretResponse } from '@mapmory/design-schema';
 import { ApiError, type ProblemDetails } from './errors';
 import type {
   ApiClient,
@@ -99,16 +99,19 @@ export class HttpApi implements ApiClient {
     return this.request<Catalog>('GET', '/api/v1/catalog');
   }
 
-  createProject(req: CreateProjectRequest) {
-    return this.request<ProjectWithDesign>('POST', '/api/v1/projects', { body: req });
+  // Designs from the server are upgraded to this client's schema, so a rolling deploy (older API, newer web) keeps working.
+  async createProject(req: CreateProjectRequest) {
+    const r = await this.request<ProjectWithDesign>('POST', '/api/v1/projects', { body: req });
+    return { ...r, design: migrateDesign(r.design) };
   }
 
   async listProjects() {
     return (await this.request<{ projects: ProjectSummary[] }>('GET', '/api/v1/projects')).projects;
   }
 
-  getProject(id: string) {
-    return this.request<ProjectWithDesign>('GET', `/api/v1/projects/${encodeURIComponent(id)}`);
+  async getProject(id: string) {
+    const r = await this.request<ProjectWithDesign>('GET', `/api/v1/projects/${encodeURIComponent(id)}`);
+    return { ...r, design: migrateDesign(r.design) };
   }
 
   saveDesign(id: string, design: Design, revision: number) {
@@ -118,8 +121,9 @@ export class HttpApi implements ApiClient {
     });
   }
 
-  resetDesign(id: string) {
-    return this.request<{ design: Design; revision: number }>('POST', `/api/v1/projects/${encodeURIComponent(id)}/design/reset`);
+  async resetDesign(id: string) {
+    const r = await this.request<{ design: Design; revision: number }>('POST', `/api/v1/projects/${encodeURIComponent(id)}/design/reset`);
+    return { ...r, design: migrateDesign(r.design) };
   }
 
   deleteProject(id: string) {
@@ -158,8 +162,9 @@ export class HttpApi implements ApiClient {
     return this.request<void>('DELETE', `/api/v1/projects/${encodeURIComponent(projectId)}/share`);
   }
 
-  getShared(token: string) {
-    return this.request<SharedPoster>('GET', `/api/v1/shared/${encodeURIComponent(token)}`);
+  async getShared(token: string) {
+    const r = await this.request<SharedPoster>('GET', `/api/v1/shared/${encodeURIComponent(token)}`);
+    return { ...r, design: migrateDesign(r.design) };
   }
 
   async signInMagicLink(email: string, callbackURL: string) {

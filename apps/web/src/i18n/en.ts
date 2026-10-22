@@ -96,7 +96,7 @@ export const en = {
     romantic: 'Romantic', nostalgic: 'Nostalgic', adventurous: 'Adventurous', celebratory: 'Celebratory', calm: 'Calm', bittersweet: 'Bittersweet', neutral: 'Neutral',
   },
   themes: {
-    'classic-ink': 'Classic Ink', minimal: 'Minimal', blush: 'Blush', sepia: 'Sepia', midnight: 'Midnight', forest: 'Forest', 'gold-ink': 'Gold Ink', ocean: 'Ocean',
+    'classic-ink': 'Classic Ink', minimal: 'Minimal', blush: 'Blush', 'old-letter': 'Old Letter', 'night-train': 'Night Train', 'lavender-field': 'Lavender Field', 'gold-ink': 'Gold Ink', riviera: 'Riviera',
   },
   editor: {
     loading: 'Loading…',
@@ -234,7 +234,7 @@ export const en = {
   },
   shapes: { rect: 'Rectangle', rounded: 'Rounded', circle: 'Circle', heart: 'Heart', arch: 'Arch' },
   icons: { heart: 'Heart', pin: 'Pin', star: 'Star', dot: 'Dot', ring: 'Ring', flag: 'Flag', home: 'Home' },
-  frames: { none: 'None', 'thin-line': 'Thin', 'double-line': 'Double', 'thick-line': 'Thick' },
+  frames: { none: 'None', 'thin-line': 'Thin', 'double-line': 'Double', 'thick-line': 'Thick', airmail: 'Airmail' },
   slots: { top: 'Above the map', bottom: 'Below the map', 'map-top': 'On the map (top)', 'map-bottom': 'On the map (bottom)' },
   corners: { 'bottom-right': 'Bottom right', 'bottom-left': 'Bottom left', 'top-right': 'Top right', 'top-left': 'Top left' },
   languages: { local: 'Local names', en: 'English', de: 'German', fr: 'French', es: 'Spanish', pt: 'Portuguese', it: 'Italian', nl: 'Dutch' },

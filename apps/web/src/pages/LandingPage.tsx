@@ -6,10 +6,10 @@ import { ExamplePoster } from '../components/ExamplePoster';
 import { FIXTURE_PLACES, toResult } from '../api/fixtures';
 
 const place = (id: string) => toResult(FIXTURE_PLACES.find((p) => p.id === id)!);
-const EXAMPLES: { input: DraftInput; themeId: 'blush' | 'classic-ink' | 'midnight' }[] = [
+const EXAMPLES: { input: DraftInput; themeId: 'blush' | 'classic-ink' | 'night-train' }[] = [
   { themeId: 'blush', input: { places: [place('W1')], title: 'Where it all began', subtitle: null, date: { iso: '2019-06-14', precision: 'day' }, mood: 'romantic', locale: 'en' } },
   { themeId: 'classic-ink', input: { places: [place('W8')], title: 'Our first trip', subtitle: null, date: { iso: '2022-08', precision: 'month' }, mood: 'adventurous', locale: 'en' } },
-  { themeId: 'midnight', input: { places: [place('W10')], title: 'The night we met', subtitle: null, date: { iso: '2017', precision: 'year' }, mood: 'neutral', locale: 'en' } },
+  { themeId: 'night-train', input: { places: [place('W10')], title: 'The night we met', subtitle: null, date: { iso: '2017', precision: 'year' }, mood: 'neutral', locale: 'en' } },
 ];
 
 export default function LandingPage() {

@@ -1,4 +1,4 @@
-import type { Design } from '@mapmory/design-schema';
+import { migrateDesign, type Design } from '@mapmory/design-schema';
 
 /** Local copy of unsaved changes, so a closed tab or lost connection never loses work (plan §6.3). */
 export interface LocalDraft {
@@ -40,5 +40,14 @@ async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBReq
 }
 
 export const putDraft = (d: LocalDraft) => tx('readwrite', (s) => s.put(d));
-export const getDraft = (projectId: string) => tx<LocalDraft | undefined>('readonly', (s) => s.get(projectId)).then((r) => r ?? null);
+/** Drafts saved by an older app version are migrated to the current schema; unreadable ones are ignored. */
+export const getDraft = (projectId: string) =>
+  tx<LocalDraft | undefined>('readonly', (s) => s.get(projectId)).then((r) => {
+    if (!r) return null;
+    try {
+      return { ...r, design: migrateDesign(r.design) };
+    } catch {
+      return null;
+    }
+  });
 export const deleteDraft = (projectId: string) => tx('readwrite', (s) => s.delete(projectId));

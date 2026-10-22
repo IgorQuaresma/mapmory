@@ -1,6 +1,6 @@
 import type { Design } from '@mapmory/design-schema';
 import { MARKER_ICON_PATHS, computeLayout, type PosterLayout, type Rect } from '@mapmory/poster-core';
-import type { CSSProperties, PointerEvent, ReactNode } from 'react';
+import { useId, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { cssFontFamily } from './fonts';
 
 export interface PosterProps {
@@ -157,9 +157,37 @@ export function Poster({ design, layout: given, renderMap, guides, showCropMarks
   );
 }
 
+/** Airmail envelope border: diagonal stripes in the frame colour and airmail blue. */
+const AIRMAIL_BLUE = '#2E3FD6';
+
 function Frame({ layout, ox, oy }: { layout: PosterLayout; ox: number; oy: number }) {
   const f = layout.frame!;
   const r = f.rect;
+  const patternId = `mm-airmail-${useId().replace(/:/g, '')}`;
+  if (f.style === 'airmail') {
+    const band = f.widthDu * 6;
+    const unit = band * 1.5;
+    return (
+      <g data-testid="frame-airmail">
+        <defs>
+          <pattern id={patternId} width={unit * 3} height={unit * 3} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width={unit} height={unit * 3} fill={f.color} />
+            <rect x={unit} width={unit} height={unit * 3} fill="#FFFFFF" />
+            <rect x={unit * 2} width={unit} height={unit * 3} fill={AIRMAIL_BLUE} />
+          </pattern>
+        </defs>
+        <rect
+          x={r.x + ox + band / 2}
+          y={r.y + oy + band / 2}
+          width={r.w - band}
+          height={r.h - band}
+          fill="none"
+          stroke={`url(#${patternId})`}
+          strokeWidth={band}
+        />
+      </g>
+    );
+  }
   const rect = (inset: number, width: number, key: string) => (
     <rect
       key={key}

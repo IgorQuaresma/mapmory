@@ -55,6 +55,30 @@ describe('migrateDesign', () => {
     expect(migrateDesign(sampleDesign)).toEqual(sampleDesign);
     expect(() => migrateDesign({ ...sampleDesign, schemaVersion: 99 })).toThrow(/Unsupported/);
   });
+
+  it('upgrades v1 designs: renamed themes and Cormorant Garamond → Fraunces', () => {
+    const renames = { forest: 'lavender-field', ocean: 'riviera', midnight: 'night-train', sepia: 'old-letter' } as const;
+    for (const [v1, v2] of Object.entries(renames)) {
+      const old = {
+        ...structuredClone(sampleDesign),
+        schemaVersion: 1,
+        map: { ...sampleDesign.map, themeId: v1 },
+        texts: sampleDesign.texts.map((t, i) => (i === 1 ? { ...t, fontId: 'cormorant-garamond' } : t)),
+      };
+      const migrated = migrateDesign(old);
+      expect(migrated.schemaVersion).toBe(2);
+      expect(migrated.map.themeId).toBe(v2);
+      expect(migrated.texts[1]!.fontId).toBe('fraunces');
+      // Everything else — colours, texts, place — is untouched.
+      expect(migrated.map.palette).toEqual(sampleDesign.map.palette);
+      expect(migrated.texts[0]).toEqual(sampleDesign.texts[0]);
+    }
+  });
+
+  it('keeps unchanged v1 themes', () => {
+    const migrated = migrateDesign({ ...structuredClone(sampleDesign), schemaVersion: 1 });
+    expect(migrated).toEqual(sampleDesign);
+  });
 });
 
 describe('sanitizePlainText', () => {

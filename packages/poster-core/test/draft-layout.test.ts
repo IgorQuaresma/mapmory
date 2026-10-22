@@ -90,7 +90,7 @@ describe('styleUpdates', () => {
       { kind: 'paint', layer: 'roads-major', property: 'line-color', value: '#FF0000' },
       { kind: 'paint', layer: 'roads-highway', property: 'line-color', value: '#FF0000' },
     ]);
-    expect(styleUpdates(a, applyTheme(a, 'midnight'))).toBeNull();
+    expect(styleUpdates(a, applyTheme(a, 'night-train'))).toBeNull();
   });
 
   it('updates the background when water is toggled', () => {
