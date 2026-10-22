@@ -8,14 +8,8 @@ import { cx } from './ui';
 export function Logo() {
   return (
     <span className="flex items-center gap-2 font-display text-xl">
-      {/* Postmark stamp: perforated edge, cancellation ring, coral pin. */}
-      <svg viewBox="0 0 40 40" className="size-8" aria-hidden>
-        <rect x="3" y="3" width="34" height="34" fill="#ffc93c" />
-        <rect x="3" y="3" width="34" height="34" fill="none" stroke="#2e3fd6" strokeWidth="2" strokeDasharray="3 2.2" />
-        <circle cx="20" cy="20" r="10.5" fill="none" stroke="#2e3fd6" strokeWidth="1.6" />
-        <path d="M20 13.5c-2.6 0-4.6 2-4.6 4.6 0 3.5 4.6 8 4.6 8s4.6-4.5 4.6-8c0-2.6-2-4.6-4.6-4.6z" fill="#ff5c7a" />
-        <circle cx="20" cy="18.2" r="1.6" fill="#ffc93c" />
-      </svg>
+      {/* Brand mark (docs/design/references/icon_reference.jpeg); decorative, the wordmark names the app. */}
+      <img src="/logo-96.png" alt="" width={32} height={32} className="size-8" />
       Mapmory
     </span>
   );
