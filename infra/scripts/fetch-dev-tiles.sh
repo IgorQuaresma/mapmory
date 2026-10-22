@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
-# Extracts a small regional PMTiles archive (Paris, Münster, Lisbon, Manhattan; z0–15, ~80 MB) from the latest
-# Protomaps planet build for local development and CI. Production uses the full planet build; see docs/ops.md.
+# Extracts a regional PMTiles archive from the latest Protomaps planet build for local development and CI.
+#   DEV_REGION=cities   (default) Paris, Münster, Lisbon, Manhattan; z0–15, ~80 MB, ~35 s — used by CI
+#   DEV_REGION=portugal the four cities plus all of mainland Portugal; ~690 MB, ~3 min
+# Production uses the full planet build; see docs/ops.md.
 set -euo pipefail
 INFRA="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$INFRA/data/tiles"
 mkdir -p "$OUT"
-cp "$INFRA/scripts/dev-regions.geojson" "$OUT/regions.geojson"
+case "${DEV_REGION:-cities}" in
+  cities) cp "$INFRA/scripts/dev-regions.geojson" "$OUT/regions.geojson" ;;
+  portugal) cp "$INFRA/scripts/dev-regions-portugal.geojson" "$OUT/regions.geojson" ;;
+  *) echo "Unknown DEV_REGION '${DEV_REGION}' (use cities or portugal)" >&2; exit 2 ;;
+esac
 if [[ -s "$OUT/dev.pmtiles" && "${FORCE:-0}" != "1" ]]; then
   echo "dev.pmtiles already present (FORCE=1 to refresh)"
   exit 0
