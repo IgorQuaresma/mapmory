@@ -5,3 +5,8 @@ onlyBuiltDependencies:
   - "@maplibre/maplibre-gl-native"
   - esbuild
   - sharp
+
+# Security overrides (OSV-Scanner in CI). drizzle-kit's loader pins esbuild 0.18 (GHSA-67mh-4wv8-2f99, dev server only);
+# 0.25 is API-compatible for its use.
+overrides:
+  "@esbuild-kit/core-utils>esbuild": "^0.25.0"
