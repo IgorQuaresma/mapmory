@@ -1,6 +1,10 @@
 import { defineConfig } from 'tsup';
 
-// Workspace packages are bundled; third-party dependencies stay external and come from `pnpm deploy`.
+/**
+ * The API ships as a self-contained bundle: every dependency is compiled in, so the runtime image needs no
+ * node_modules (smaller image, no dev-only packages pulled in through optional peer dependencies).
+ * Only optional native add-ons stay external; their packages try/catch the require and fall back to JS.
+ */
 export default defineConfig({
   entry: ['src/server.ts', 'src/db/migrate.ts'],
   format: ['esm'],
@@ -9,6 +13,9 @@ export default defineConfig({
   outDir: 'dist',
   clean: true,
   sourcemap: true,
-  splitting: false,
-  noExternal: [/^@mapmory\//],
+  splitting: true,
+  noExternal: [/.*/],
+  external: ['pg-native', 'msgpackr-extract', 'cpu-features', 'ssh2'],
+  // CommonJS dependencies call require() for Node built-ins; give the ESM bundle a real require.
+  banner: { js: "import { createRequire as __mmCreateRequire } from 'node:module'; const require = __mmCreateRequire(import.meta.url);" },
 });

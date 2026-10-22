@@ -6,11 +6,11 @@ RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --filter @mapmory/api...
-RUN pnpm --filter @mapmory/api build \
- && pnpm --filter @mapmory/api deploy --prod --legacy /out \
- && cp -r apps/api/dist apps/api/drizzle /out/
+# tsup bundles every dependency into dist/ (see tsup.config.ts), so the runtime image needs no node_modules.
+RUN pnpm --filter @mapmory/api build && mkdir -p /out && cp -r apps/api/dist apps/api/drizzle /out/ \
+ && printf '{"type":"module"}\n' > /out/package.json
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:22-alpine AS runtime
 ENV NODE_ENV=production MIGRATIONS_DIR=/app/drizzle
 WORKDIR /app
 COPY --from=build --chown=node:node /out /app
