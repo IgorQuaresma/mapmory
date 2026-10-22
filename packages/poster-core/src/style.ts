@@ -226,7 +226,9 @@ export function buildStyle(design: Design, endpoints: StyleEndpoints): StyleSpec
       filter: ['all', kindIs('major_road', 'minor_road', 'highway'), ['has', 'name']],
       layout: {
         ...vis('labels'),
-        'symbol-placement': 'line',
+        // One label per road segment, at its centre: repeated labels spaced along a line are placed slightly
+        // differently by GL JS (preview) and Native (print); a single centred label is stable (ADR 0001).
+        'symbol-placement': 'line-center',
         'text-field': nameExpression(labelLanguage),
         'text-font': font,
         'text-size': ['interpolate', ['linear'], ['zoom'], 13, 8, 17, 12],

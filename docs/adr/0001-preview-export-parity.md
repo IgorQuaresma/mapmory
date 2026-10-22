@@ -18,14 +18,16 @@ Pixels are compared with `pixelmatch` (threshold 0.15, anti-aliasing ignored).
 | Labels | Mismatch (all themes) |
 |---|---|
 | Off (poster default) | **0.00 %** |
-| On | 1.2 – 2.8 % |
+| On, road names repeated along lines (`symbol-placement: line`) | 1.2 – 2.8 % |
+| On, one road name per segment at its centre (`line-center`, since 2026-10-23) | **0.56 – 0.77 %** |
 
-With labels on, the *set* of labels is identical; only road names are anchored at slightly different
-positions along their lines. Place labels match exactly.
+With repeated labels, the two renderers spaced road names differently along their lines. With `line-center`
+nearly every label lands in the same place; the remainder is a handful of names that one renderer drops where
+labels collide. Place labels match exactly.
 
 ## Decision
 - Keep MapLibre Native as the exporter. The headless-Chromium fallback renderer is not needed.
-- CI runs `pnpm --filter @mapmory/renderer parity` with a 0.5 % threshold (labels off) and 3 % (labels on).
+- CI runs `pnpm --filter @mapmory/renderer parity` with a 0.5 % threshold (labels off) and 1.5 % (labels on).
 - The editor shows a small note in the Style panel when labels are enabled: "Street names may shift slightly in the print."
 
 ## Consequences
