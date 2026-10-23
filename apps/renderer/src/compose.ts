@@ -26,7 +26,11 @@ let browserPromise: Promise<Browser> | null = null;
 /** One long-lived browser per worker; each job gets an isolated context. */
 export function getBrowser(): Promise<Browser> {
   browserPromise ??= chromium
-    .launch({ headless: true, args: ['--disable-dev-shm-usage', '--font-render-hinting=none'] })
+    .launch({
+      headless: true,
+      // CHROMIUM_EXTRA_ARGS (space-separated) lets parity runs pick a WebGL backend, e.g. "--use-angle=gl".
+      args: ['--disable-dev-shm-usage', '--font-render-hinting=none', ...(process.env.CHROMIUM_EXTRA_ARGS?.split(' ').filter(Boolean) ?? [])],
+    })
     .then((b) => {
       b.on('disconnected', () => (browserPromise = null));
       return b;
@@ -53,6 +57,8 @@ export interface ComposeInput {
    */
   live?: { style: StyleSpecification; pixelRatio: number; proxyTarget: string };
   timeoutMs?: number;
+  /** Receives the page's console output and uncaught errors (diagnostics for parity runs). */
+  onConsole?: (message: string) => void;
 }
 
 async function openPrintPage(input: ComposeInput) {
@@ -68,6 +74,11 @@ async function openPrintPage(input: ComposeInput) {
     serviceWorkers: 'block',
   });
   const page = await context.newPage();
+  if (input.onConsole) {
+    const report = input.onConsole;
+    page.on('console', (m) => report(`${m.type()}: ${m.text()}`));
+    page.on('pageerror', (e) => report(`pageerror: ${e.message}`));
+  }
   const distRoot = path.resolve(input.distDir);
 
   await page.route('**/*', async (route) => {

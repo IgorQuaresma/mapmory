@@ -17,6 +17,7 @@ import { renderMapRaster } from '../src/map-raster';
 
 const threshold = Number(process.argv.find((a) => /^\d/.test(a)) ?? 0.06);
 const withLabels = process.argv.includes('--labels');
+const only = process.env.PARITY_THEMES?.split(',');
 const deps = loadConfigForCli();
 const outDir = path.resolve('test/__output__/parity');
 await mkdir(outDir, { recursive: true });
@@ -24,7 +25,7 @@ const base = migrateDesign(JSON.parse(await readFile('test/fixtures/paris-classi
 
 let failed = false;
 try {
-  for (const themeId of THEME_IDS) {
+  for (const themeId of THEME_IDS.filter((t) => !only || only.includes(t))) {
     // Markers are overlay elements, not map pixels — leave them out of the comparison.
     const design = applyTheme({ ...base, markers: [], map: { ...base.map, layers: { ...base.map.layers, labels: withLabels } } }, themeId);
     const layout = computeLayout(design);
@@ -62,6 +63,7 @@ try {
             pixelRatio: 1,
             proxyTarget: deps.tilesUrl,
           },
+          onConsole: process.env.PARITY_DEBUG ? (m) => console.log(`  [${themeId} page] ${m}`) : undefined,
         },
         { x: rect.x, y: rect.y, width: w, height: h },
       );

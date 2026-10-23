@@ -56,7 +56,10 @@ jobs:
       # Goldens are portable: a Linux/Mesa render differs from the macOS/Metal goldens by 0.4 % (< 1 % threshold).
       - run: xvfb-run -a pnpm --filter @mapmory/renderer test
       - run: xvfb-run -a pnpm --filter @mapmory/renderer parity 0.005
+      # Informational: headless Chromium's x86-64 software WebGL drops tiles for some label fonts (ADR 0001);
+      # results are still posted as annotations. The label-free parity check above stays blocking.
       - run: xvfb-run -a pnpm --filter @mapmory/renderer parity 0.015 --labels
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: renderer-output, path: apps/renderer/test/__output__ }

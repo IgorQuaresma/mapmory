@@ -73,7 +73,11 @@ function LiveMap({ payload, width, height, onReady }: { payload: PrintPayload; w
         fadeDuration: 0,
       });
       m.once('idle', onReady);
-      m.on('error', (e) => (window.__MAPMORY_ERROR__ = String(e.error?.message ?? e)));
+      m.on('error', (e) => {
+        const message = String(e.error?.message ?? e);
+        console.error(`map error: ${message}`);
+        window.__MAPMORY_ERROR__ = message;
+      });
       map = m;
     });
     return () => map?.remove();
