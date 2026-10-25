@@ -1,4 +1,5 @@
 import type {
+  Discipline,
   FontId,
   FrameStyle,
   Layers,
@@ -30,7 +31,14 @@ export interface Theme {
   buildingOpacity: number;
   /** Fontstack used for map labels (must exist in Martin's font catalog). */
   labelFont: FontId;
+  /** Route colours of race legs; themes without their own use DISCIPLINE_COLORS. */
+  disciplineColors?: Record<Discipline, string>;
+  /** Shown first when making a race poster. */
+  sport?: boolean;
 }
+
+/** Default leg colours: open water, the bike's orange, the run's green. */
+export const DISCIPLINE_COLORS: Record<Discipline, string> = { swim: '#1C7ED6', bike: '#F0592A', run: '#2B9348' };
 
 const allLayers = (overrides: Partial<Layers> = {}): Layers => ({
   roads: true,
@@ -220,7 +228,87 @@ export const THEMES: Record<ThemeId, Theme> = {
     buildingOpacity: 0.9,
     labelFont: 'bricolage-grotesque',
   },
+  'race-day': {
+    id: 'race-day',
+    name: 'Race Day',
+    description: 'Bold black type on white, with bright leg colours like a start number.',
+    palette: {
+      land: '#F1F1EE', water: '#CAD8E2', parks: '#DFE5D8', roads: '#1A1A1A',
+      roadsMinor: '#8A8A86', buildings: '#E4E4DF', rail: '#A0A09A', labels: '#1A1A1A',
+    },
+    layers: allLayers({ buildings: false }),
+    pageBackground: '#FAFAF7',
+    textColor: '#111111',
+    accent: '#F0592A',
+    typography: {
+      title: { fontId: 'bricolage-grotesque', weight: 800, uppercase: true, letterSpacing: 0.01 },
+      body: { fontId: 'inter', weight: 600, uppercase: true, letterSpacing: 0.16 },
+    },
+    frame: { style: 'none', color: '#111111' },
+    shape: 'rect',
+    roadWeight: 0.8,
+    buildingOpacity: 0.8,
+    labelFont: 'inter',
+    disciplineColors: { swim: '#0077C8', bike: '#F0592A', run: '#00A36C' },
+    sport: true,
+  },
+  finisher: {
+    id: 'finisher',
+    name: 'Finisher',
+    description: 'Night-blue maps with gold lettering, like a finisher medal.',
+    palette: {
+      land: '#13233A', water: '#0B1626', parks: '#18304A', roads: '#4A6488',
+      roadsMinor: '#2D4362', buildings: '#1B2F4B', rail: '#3C5578', labels: '#C9D3E0',
+    },
+    layers: allLayers(),
+    pageBackground: '#0E1A2B',
+    textColor: '#F2C14E',
+    accent: '#F2C14E',
+    typography: {
+      title: { fontId: 'montserrat', weight: 800, uppercase: true, letterSpacing: 0.1 },
+      body: { fontId: 'montserrat', weight: 500, uppercase: true, letterSpacing: 0.24 },
+    },
+    frame: { style: 'thin-line', color: '#F2C14E' },
+    shape: 'rect',
+    roadWeight: 0.9,
+    buildingOpacity: 0.9,
+    labelFont: 'montserrat',
+    disciplineColors: { swim: '#5CC8F2', bike: '#F2C14E', run: '#FF7A59' },
+    sport: true,
+  },
+  trail: {
+    id: 'trail',
+    name: 'Trail',
+    description: 'Sand, olive and rust: an outdoor map for long days out.',
+    palette: {
+      land: '#EAE2D0', water: '#B7CAC6', parks: '#CED4B2', roads: '#5B4A36',
+      roadsMinor: '#94836B', buildings: '#DDD3BE', rail: '#94836B', labels: '#3E3226',
+    },
+    layers: allLayers({ paths: true }),
+    pageBackground: '#F0E9DB',
+    textColor: '#3E3226',
+    accent: '#C8553D',
+    typography: {
+      title: { fontId: 'josefin-sans', weight: 700, uppercase: true, letterSpacing: 0.12 },
+      body: { fontId: 'josefin-sans', weight: 400, uppercase: true, letterSpacing: 0.2 },
+    },
+    frame: { style: 'double-line', color: '#3E3226' },
+    shape: 'rounded',
+    roadWeight: 1,
+    buildingOpacity: 0.85,
+    labelFont: 'josefin-sans',
+    disciplineColors: { swim: '#2F6F8F', bike: '#C8553D', run: '#5F7F3A' },
+    sport: true,
+  },
 };
+
+/** Route colour of a race leg in a theme. */
+export function disciplineColor(themeId: ThemeId, discipline: Discipline): string {
+  return (THEMES[themeId].disciplineColors ?? DISCIPLINE_COLORS)[discipline];
+}
+
+/** Theme of a new race poster. */
+export const SPORT_THEME: ThemeId = 'race-day';
 
 export const THEME_LIST: Theme[] = Object.values(THEMES);
 

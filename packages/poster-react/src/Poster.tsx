@@ -1,5 +1,13 @@
 import type { Design } from '@mapmory/design-schema';
-import { MARKER_ICON_PATHS, computeLayout, type PosterLayout, type Rect } from '@mapmory/poster-core';
+import {
+  DISCIPLINE_ICONS,
+  MARKER_ICON_PATHS,
+  computeLayout,
+  type LaidOutPanel,
+  type LaidOutStats,
+  type PosterLayout,
+  type Rect,
+} from '@mapmory/poster-core';
 import { useId, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
 import { cssFontFamily } from './fonts';
 
@@ -7,8 +15,11 @@ export interface PosterProps {
   design: Design;
   /** Pre-computed layout (pass when bleed/slug are needed); defaults to the trim-only layout. */
   layout?: PosterLayout;
-  /** Content drawn inside the map rect: a live MapLibre map (preview) or the rendered raster (print). */
-  renderMap: (rect: Rect) => ReactNode;
+  /**
+   * Content drawn inside a map panel: a live MapLibre map (preview) or the rendered raster (print). Called once per
+   * panel: once on a single-map poster, once per leg on a race poster.
+   */
+  renderMap: (rect: Rect, panel: LaidOutPanel) => ReactNode;
   /** Extra overlay (e.g. safe-zone guides) drawn above the poster in page coordinates. */
   guides?: ReactNode;
   showCropMarks?: boolean;
@@ -45,7 +56,8 @@ export function Poster({
   className,
 }: PosterProps) {
   const layout = given ?? computeLayout(design);
-  const { outer, map } = layout;
+  const { outer, panels } = layout;
+  const clipBase = `mm-map-clip-${useId().replace(/:/g, '')}`;
   // Everything is positioned relative to the trim origin, offset by bleed+slug.
   const ox = -outer.x;
   const oy = -outer.y;
@@ -68,9 +80,15 @@ export function Poster({
           background: layout.background,
         }}
       />
-      <div style={{ ...abs(map.rect), clipPath: `path('${map.clipPath}')`, overflow: 'hidden' }} data-testid="poster-map">
-        {renderMap(map.rect)}
-      </div>
+      {panels.map((p) => (
+        <div
+          key={p.index}
+          style={{ ...abs(p.rect), clipPath: `path('${p.clipPath}')`, overflow: 'hidden' }}
+          data-testid={p.leg ? `poster-panel-${p.leg.id}` : 'poster-map'}
+        >
+          {renderMap(p.rect, p)}
+        </div>
+      ))}
 
       <svg
         style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible', pointerEvents: 'none' }}
@@ -80,48 +98,57 @@ export function Poster({
         aria-hidden="true"
       >
         <defs>
-          <clipPath id="mm-map-clip">
-            <rect x={map.trimRect.x + ox} y={map.trimRect.y + oy} width={map.trimRect.w} height={map.trimRect.h} />
-          </clipPath>
+          {panels.map((p) => (
+            <clipPath key={p.index} id={`${clipBase}-${p.index}`}>
+              <rect x={p.trimRect.x + ox} y={p.trimRect.y + oy} width={p.trimRect.w} height={p.trimRect.h} />
+            </clipPath>
+          ))}
         </defs>
-        {map.outline && (
-          <path
-            d={map.outline.path}
-            transform={`translate(${map.trimRect.x + ox} ${map.trimRect.y + oy})`}
-            fill="none"
-            stroke={map.outline.color}
-            strokeWidth={map.outline.widthDu}
-          />
+        {panels.map(
+          (p) =>
+            p.outline && (
+              <path
+                key={p.index}
+                d={p.outline.path}
+                transform={`translate(${p.trimRect.x + ox} ${p.trimRect.y + oy})`}
+                fill="none"
+                stroke={p.outline.color}
+                strokeWidth={p.outline.widthDu}
+              />
+            ),
         )}
-        <g clipPath="url(#mm-map-clip)">
-          {layout.markers.map((m) => {
-            const icon = MARKER_ICON_PATHS[m.icon];
-            const s = m.sizeDu / 24;
-            const tx = m.x + ox - icon.anchor[0] * s;
-            const ty = m.y + oy - icon.anchor[1] * s;
-            return (
-              <g
-                key={m.id}
-                transform={`translate(${tx} ${ty}) scale(${s})`}
-                style={{ pointerEvents: onMarkerPointerDown ? 'auto' : 'none', cursor: onMarkerPointerDown ? 'grab' : undefined }}
-                onPointerDown={onMarkerPointerDown ? (e) => onMarkerPointerDown(m.id, e) : undefined}
-                data-testid={`marker-${m.id}`}
-              >
-                <path
-                  d={icon.d}
-                  fill={m.color}
-                  fillRule={icon.evenOdd ? 'evenodd' : 'nonzero'}
-                  stroke={design.map.palette.land}
-                  strokeWidth={1.2}
-                  paintOrder="stroke"
-                />
-                {selectedMarkerId === m.id && (
-                  <rect x={-2} y={-2} width={28} height={28} fill="none" stroke="#3B82F6" strokeWidth={1.2 / s * 2} strokeDasharray="3 2" />
-                )}
-              </g>
-            );
-          })}
-        </g>
+        {panels.map((p) => p.stats && <StatsIcon key={p.index} stats={p.stats} ox={ox} oy={oy} />)}
+        {panels.map((p) => (
+          <g key={p.index} clipPath={`url(#${clipBase}-${p.index})`}>
+            {layout.markers.filter((m) => m.panel === p.index).map((m) => {
+              const icon = MARKER_ICON_PATHS[m.icon];
+              const s = m.sizeDu / 24;
+              const tx = m.x + ox - icon.anchor[0] * s;
+              const ty = m.y + oy - icon.anchor[1] * s;
+              return (
+                <g
+                  key={m.id}
+                  transform={`translate(${tx} ${ty}) scale(${s})`}
+                  style={{ pointerEvents: onMarkerPointerDown ? 'auto' : 'none', cursor: onMarkerPointerDown ? 'grab' : undefined }}
+                  onPointerDown={onMarkerPointerDown ? (e) => onMarkerPointerDown(m.id, e) : undefined}
+                  data-testid={`marker-${m.id}`}
+                >
+                  <path
+                    d={icon.d}
+                    fill={m.color}
+                    fillRule={icon.evenOdd ? 'evenodd' : 'nonzero'}
+                    stroke={design.map.palette.land}
+                    strokeWidth={1.2}
+                    paintOrder="stroke"
+                  />
+                  {selectedMarkerId === m.id && (
+                    <rect x={-2} y={-2} width={28} height={28} fill="none" stroke="#3B82F6" strokeWidth={1.2 / s * 2} strokeDasharray="3 2" />
+                  )}
+                </g>
+              );
+            })}
+          </g>
+        ))}
         {layout.frame && <Frame layout={layout} ox={ox} oy={oy} />}
         {showCropMarks && layout.slugDu > 0 && <CropMarks layout={layout} ox={ox} oy={oy} />}
       </svg>
@@ -164,6 +191,8 @@ export function Poster({
           </div>
         </div>
       ))}
+
+      {panels.map((p) => p.stats && <StatsText key={p.index} stats={p.stats} ox={ox} oy={oy} />)}
 
       {layout.texts.map((t) => (
         <div
@@ -223,6 +252,92 @@ export function Poster({
       </div>
       {guides && <div style={{ position: 'absolute', left: ox, top: oy, pointerEvents: 'none' }}>{guides}</div>}
     </div>
+  );
+}
+
+/** Geometry of the stats block: icon and label on the first line, figures below (all in design units). */
+function statsMetrics(s: LaidOutStats) {
+  const iconSize = s.sizeDu * 1.35;
+  const labelSize = s.sizeDu * 1.05;
+  const lineHeight = s.sizeDu * 1.3;
+  return { iconSize, labelSize, lineHeight, firstLine: Math.max(iconSize, labelSize * 1.2) };
+}
+
+/** Width estimate of the label, so the icon and label are centred together. Matches preflight's average. */
+const labelWidth = (s: LaidOutStats) => s.label.length * s.sizeDu * 1.05 * 0.62 * 1.1;
+
+function StatsIcon({ stats: s, ox, oy }: { stats: LaidOutStats; ox: number; oy: number }) {
+  const { iconSize, firstLine } = statsMetrics(s);
+  const gap = s.sizeDu * 0.45;
+  const left = s.x - (iconSize + gap + labelWidth(s)) / 2;
+  const icon = DISCIPLINE_ICONS[s.discipline];
+  const k = iconSize / 24;
+  return (
+    <g
+      transform={`translate(${left + ox} ${s.y + oy + (firstLine - iconSize) / 2}) scale(${k})`}
+      fill="none"
+      stroke={s.color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      data-testid={`stats-icon-${s.discipline}`}
+    >
+      <path d={icon.d} />
+      {icon.circles.map(([cx, cy, r], i) => (
+        <circle key={i} cx={cx} cy={cy} r={r} />
+      ))}
+    </g>
+  );
+}
+
+function StatsText({ stats: s, ox, oy }: { stats: LaidOutStats; ox: number; oy: number }) {
+  const { iconSize, labelSize, lineHeight, firstLine } = statsMetrics(s);
+  const gap = s.sizeDu * 0.45;
+  const left = s.x - (iconSize + gap + labelWidth(s)) / 2;
+  const font = {
+    fontFamily: cssFontFamily(s.fontId),
+    color: s.color,
+    whiteSpace: 'pre' as const,
+    pointerEvents: 'none' as const,
+  };
+  return (
+    <>
+      <div
+        style={{
+          ...font,
+          position: 'absolute',
+          left: left + iconSize + gap + ox,
+          top: s.y + oy,
+          height: firstLine,
+          lineHeight: `${firstLine}px`,
+          fontSize: labelSize,
+          fontWeight: 700,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {s.label}
+      </div>
+      {s.lines.map((line, i) => (
+        <div
+          key={i}
+          data-testid="stats-line"
+          style={{
+            ...font,
+            position: 'absolute',
+            left: s.x + ox,
+            top: s.y + oy + firstLine + s.sizeDu * 0.2 + i * lineHeight,
+            transform: 'translateX(-50%)',
+            fontSize: s.sizeDu,
+            lineHeight: `${lineHeight}px`,
+            fontWeight: i === 0 ? 600 : 400,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {line}
+        </div>
+      ))}
+    </>
   );
 }
 

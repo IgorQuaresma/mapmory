@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { generateDraft, computeLayout, applyTheme } from '@mapmory/poster-core';
+import { generateDraft, computeLayout, applyTheme, detectRace, makeRacePoster } from '@mapmory/poster-core';
 import { Poster } from '../src';
 
 const draft = generateDraft({
@@ -22,6 +22,21 @@ const render = (design = draft, opts: { bleedDu?: number; slugDu?: number; cropM
   );
 
 describe('Poster', () => {
+  it('draws one map per leg of a race poster, with icon, label and figures', () => {
+    const race = makeRacePoster(draft, detectRace('Ironman Frankfurt: swim 1:05:12, bike 5:40:12, run 4:40:03')!, 'en');
+    const legs: string[] = [];
+    const html = renderToStaticMarkup(
+      <Poster design={race} renderMap={(_, panel) => (legs.push(panel.leg!.id), <div data-testid="map-slot" />)} />,
+    );
+    expect(legs).toEqual(['leg1', 'leg2', 'leg3']);
+    expect(html.match(/data-testid="map-slot"/g)).toHaveLength(3);
+    for (const d of ['swim', 'bike', 'run']) expect(html).toContain(`data-testid="stats-icon-${d}"`);
+    expect(html).toContain('3.8 km · 1:05:12');
+    expect(html).toContain('31.7 km/h');
+    // The venue marker appears in every panel that shows it.
+    expect(html.match(/data-testid="marker-m1"/g)!.length).toBeGreaterThanOrEqual(1);
+  });
+
   it('always prints the OpenStreetMap attribution', () => {
     expect(render()).toContain('© OpenStreetMap contributors');
   });

@@ -1,7 +1,8 @@
-import type { Design, DesignText, FontId, MarkerIcon, PhotoFrame } from '@mapmory/design-schema';
+import type { Design, DesignText, Discipline, FontId, Leg, MarkerIcon, PhotoFrame } from '@mapmory/design-schema';
 import { readableInk } from './color';
 import { offsetCenter, toScreen, type Viewport } from './geo';
 import { canBleed, shapePath } from './shapes';
+import { legStats } from './sport';
 import { mmToDu, pageHeightDu } from './units';
 
 export interface Rect {
@@ -59,6 +60,39 @@ export interface LaidOutMarker {
   x: number;
   y: number;
   insideMap: boolean;
+  /** Index of the map panel the marker is drawn in. */
+  panel: number;
+}
+
+/** One map drawn on the page: the whole map of a single-map poster, or one leg of a race poster. */
+export interface LaidOutPanel {
+  index: number;
+  /** Where the map raster is drawn (may extend into the bleed). */
+  rect: Rect;
+  /** The map area as designed, inside the trim. */
+  trimRect: Rect;
+  viewport: Viewport;
+  /** Clip path relative to `rect`. */
+  clipPath: string;
+  outline: { widthDu: number; color: string; path: string } | null;
+  /** The race leg shown in this panel; null on single-map posters. */
+  leg: Leg | null;
+  stats: LaidOutStats | null;
+}
+
+/** Discipline icon, label and figures under a race panel, centred on `x`. */
+export interface LaidOutStats {
+  discipline: Discipline;
+  x: number;
+  /** Top of the stats block. */
+  y: number;
+  w: number;
+  sizeDu: number;
+  fontId: FontId;
+  color: string;
+  label: string;
+  /** One entry per line below the label, e.g. ["3.8 km · 1:05:12", "1:43 /100 m"]. */
+  lines: string[];
 }
 
 export interface PosterLayout {
@@ -68,16 +102,13 @@ export interface PosterLayout {
   /** The whole output surface (trim + bleed + slug), in page coordinates. */
   outer: Rect;
   background: string;
-  map: {
-    /** Where the map raster is drawn (may extend into the bleed). */
-    rect: Rect;
-    /** The map area as designed, inside the trim. */
-    trimRect: Rect;
-    viewport: Viewport;
-    /** Clip path relative to `rect`. */
-    clipPath: string;
-    outline: { widthDu: number; color: string; path: string } | null;
-  };
+  /**
+   * The whole map area. On a single-map poster this is the one map (identical to `panels[0]`); on a race poster it is
+   * the area the panels share, used for text slots and attribution.
+   */
+  map: Omit<LaidOutPanel, 'index' | 'leg' | 'stats'>;
+  /** The maps to draw: one on a single-map poster, one per leg on a race poster. */
+  panels: LaidOutPanel[];
   markers: LaidOutMarker[];
   texts: LaidOutText[];
   photos: LaidOutPhoto[];
@@ -98,7 +129,7 @@ export function computeLayout(design: Design, opts: { bleedDu?: number; slugDu?:
   const slugDu = opts.slugDu ?? 0;
   const W = 1000;
   const H = pageHeightDu(design.page);
-  const { insetDu, shape } = design.map;
+  const { insetDu } = design.map;
 
   const trimRect: Rect = {
     x: insetDu.left,
@@ -106,48 +137,22 @@ export function computeLayout(design: Design, opts: { bleedDu?: number; slugDu?:
     w: W - insetDu.left - insetDu.right,
     h: H - insetDu.top - insetDu.bottom,
   };
+  const panels = layoutPanels(design, trimRect, { W, H, bleedDu });
+  const single = !design.sport;
+  const { rect, viewport } = single ? panels[0]! : { rect: trimRect, viewport: panels[0]!.viewport };
 
-  // A rectangular map that touches a trim edge extends into the bleed on that side.
-  const ext = { l: 0, r: 0, t: 0, b: 0 };
-  if (bleedDu > 0 && canBleed(shape)) {
-    if (insetDu.left === 0) ext.l = bleedDu;
-    if (insetDu.right === 0) ext.r = bleedDu;
-    if (insetDu.top === 0) ext.t = bleedDu;
-    if (insetDu.bottom === 0) ext.b = bleedDu;
-  }
-  const rect: Rect = {
-    x: trimRect.x - ext.l,
-    y: trimRect.y - ext.t,
-    w: trimRect.w + ext.l + ext.r,
-    h: trimRect.h + ext.t + ext.b,
-  };
-  // Keep the geography of the trim area fixed when the render rect grows asymmetrically.
-  const center = offsetCenter(design.map.center, design.map.zoom, design.map.bearing, [
-    (ext.r - ext.l) / 2,
-    (ext.b - ext.t) / 2,
-  ]);
-  const viewport: Viewport = {
-    center,
-    zoom: design.map.zoom,
-    bearing: design.map.bearing,
-    width: rect.w,
-    height: rect.h,
-  };
-
-  const markers: LaidOutMarker[] = design.markers.map((m) => {
-    const [sx, sy] = toScreen(m.lngLat, viewport);
-    const x = rect.x + sx;
-    const y = rect.y + sy;
-    return {
-      id: m.id,
-      icon: m.icon,
-      color: m.color,
-      sizeDu: m.sizeDu,
-      x,
-      y,
-      insideMap: x >= trimRect.x && x <= trimRect.x + trimRect.w && y >= trimRect.y && y <= trimRect.y + trimRect.h,
-    };
-  });
+  // A marker is drawn in every panel that shows its place (race posters), or once in the single map.
+  const markers: LaidOutMarker[] = design.markers.flatMap((m) =>
+    panels.flatMap((p) => {
+      const [sx, sy] = toScreen(m.lngLat, p.viewport);
+      const x = p.rect.x + sx;
+      const y = p.rect.y + sy;
+      const t = p.trimRect;
+      const insideMap = x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h;
+      if (!single && !insideMap) return [];
+      return [{ id: m.id, icon: m.icon, color: m.color, sizeDu: m.sizeDu, x, y, insideMap, panel: p.index }];
+    }),
+  );
 
   const margin = design.page.marginDu;
   const texts = layoutTexts(design, { W, H, margin, mapRect: trimRect });
@@ -178,16 +183,10 @@ export function computeLayout(design: Design, opts: { bleedDu?: number; slugDu?:
     slugDu,
     outer: { x: -bleedDu - slugDu, y: -bleedDu - slugDu, w: W + 2 * (bleedDu + slugDu), h: H + 2 * (bleedDu + slugDu) },
     background: design.page.background,
-    map: {
-      rect,
-      trimRect,
-      viewport,
-      clipPath: shapePath(shape, rect.w, rect.h),
-      outline:
-        design.map.outline.widthDu > 0
-          ? { widthDu: design.map.outline.widthDu, color: design.map.outline.color, path: shapePath(shape, trimRect.w, trimRect.h) }
-          : null,
-    },
+    map: single
+      ? { rect, trimRect, viewport, clipPath: panels[0]!.clipPath, outline: panels[0]!.outline }
+      : { rect, trimRect, viewport, clipPath: shapePath('rect', rect.w, rect.h), outline: null },
+    panels,
     markers,
     texts,
     photos: layoutPhotos(design),
@@ -202,6 +201,88 @@ export function computeLayout(design: Design, opts: { bleedDu?: number; slugDu?:
       color: readableInk(overMap ? design.map.palette.land : design.page.background),
     },
   };
+}
+
+/** Height of the stats block under a race panel, in multiples of the stats text size. */
+export const STATS_BLOCK_EM = 4.4;
+
+/**
+ * Splits the map area into panels. A single-map poster has one panel covering the area; a race poster has one per
+ * leg, with room for the stats block under each. `hero` gives the longest leg the upper 60 %.
+ */
+export function panelTrimRects(design: Design, area: Rect): Rect[] {
+  const sport = design.sport;
+  if (!sport) return [area];
+  const n = sport.legs.length;
+  const gap = n > 1 ? sport.gapDu : 0;
+  const statsH = sport.showStats ? sport.statsSizeDu * STATS_BLOCK_EM : 0;
+  const cell = (x: number, y: number, w: number, h: number): Rect => ({ x, y, w, h: Math.max(40, h - statsH) });
+  if (sport.layout === 'rows') {
+    const h = (area.h - gap * (n - 1)) / n;
+    return sport.legs.map((_, i) => cell(area.x, area.y + i * (h + gap), area.w, h));
+  }
+  if (sport.layout === 'hero' && n === 3) {
+    const hero = heroLeg(sport.legs);
+    const topH = (area.h - gap) * 0.6;
+    const w = (area.w - gap) / 2;
+    let slot = 0;
+    return sport.legs.map((_, i) =>
+      i === hero ? cell(area.x, area.y, area.w, topH) : cell(area.x + slot++ * (w + gap), area.y + topH + gap, w, area.h - topH - gap),
+    );
+  }
+  const w = (area.w - gap * (n - 1)) / n;
+  return sport.legs.map((_, i) => cell(area.x + i * (w + gap), area.y, w, area.h));
+}
+
+/** The leg shown large in the `hero` layout: the longest one, or the bike leg when distances are unknown. */
+export function heroLeg(legs: Leg[]): number {
+  let best = legs.findIndex((l) => l.discipline === 'bike');
+  if (best === -1) best = 0;
+  legs.forEach((l, i) => {
+    if ((l.distanceKm ?? -1) > (legs[best]!.distanceKm ?? -1)) best = i;
+  });
+  return best;
+}
+
+function layoutPanels(design: Design, area: Rect, { W, H, bleedDu }: { W: number; H: number; bleedDu: number }): LaidOutPanel[] {
+  const { shape } = design.map;
+  const sport = design.sport;
+  return panelTrimRects(design, area).map((trimRect, index) => {
+    const leg = sport?.legs[index] ?? null;
+    // A rectangular panel that touches a trim edge extends into the bleed on that side.
+    const ext = { l: 0, r: 0, t: 0, b: 0 };
+    if (bleedDu > 0 && canBleed(shape)) {
+      const near = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+      if (near(trimRect.x, 0)) ext.l = bleedDu;
+      if (near(trimRect.x + trimRect.w, W)) ext.r = bleedDu;
+      if (near(trimRect.y, 0)) ext.t = bleedDu;
+      if (near(trimRect.y + trimRect.h, H)) ext.b = bleedDu;
+    }
+    const rect: Rect = { x: trimRect.x - ext.l, y: trimRect.y - ext.t, w: trimRect.w + ext.l + ext.r, h: trimRect.h + ext.t + ext.b };
+    const view = leg ?? design.map;
+    // Keep the geography of the trim area fixed when the render rect grows asymmetrically.
+    const center = offsetCenter(view.center, view.zoom, view.bearing, [(ext.r - ext.l) / 2, (ext.b - ext.t) / 2]);
+    const viewport: Viewport = { center, zoom: view.zoom, bearing: view.bearing, width: rect.w, height: rect.h };
+    const outline =
+      design.map.outline.widthDu > 0
+        ? { widthDu: design.map.outline.widthDu, color: design.map.outline.color, path: shapePath(shape, trimRect.w, trimRect.h) }
+        : null;
+    const stats =
+      leg && sport?.showStats
+        ? {
+            discipline: leg.discipline,
+            x: trimRect.x + trimRect.w / 2,
+            y: trimRect.y + trimRect.h + sport.statsSizeDu * 0.6,
+            w: trimRect.w,
+            sizeDu: sport.statsSizeDu,
+            fontId: sport.statsFontId,
+            color: sport.statsColor,
+            label: leg.label,
+            lines: legStats(leg, sport.units),
+          }
+        : null;
+    return { index, rect, trimRect, viewport, clipPath: shapePath(shape, rect.w, rect.h), outline, leg, stats };
+  });
 }
 
 function layoutTexts(

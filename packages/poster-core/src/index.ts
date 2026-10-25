@@ -12,3 +12,4 @@ export * from './paper';
 export * from './preflight';
 export * from './canonical';
 export * from './routes';
+export * from './sport';

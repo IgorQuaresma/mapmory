@@ -1,4 +1,4 @@
-import type { MarkerIcon } from '@mapmory/design-schema';
+import type { Discipline, MarkerIcon } from '@mapmory/design-schema';
 
 /**
  * Marker icons as 24×24 SVG paths. Paths are adapted from Material Icons (Apache License 2.0).
@@ -26,4 +26,23 @@ export const MARKER_ICON_PATHS: Record<MarkerIcon, { d: string; anchor: [number,
   },
   flag: { d: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z', anchor: [6, 21] },
   home: { d: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z', anchor: [12, 20] },
+};
+
+/**
+ * Discipline pictograms for race panels: 24×24 line drawings (stroke 2, round caps and joins, no fill), drawn as
+ * vectors on the poster so they stay sharp in print.
+ */
+export const DISCIPLINE_ICONS: Record<Discipline, { d: string; circles: [number, number, number][] }> = {
+  swim: {
+    d: 'M3 13.5L7.5 10.5L11 12.5L15.5 9.5M2 17.5q2.5-2 5 0t5 0t5 0t5 0M2 21.5q2.5-2 5 0t5 0t5 0t5 0',
+    circles: [[18.5, 9, 2]],
+  },
+  bike: {
+    d: 'M5.5 17.5L9 11H15.5L18.5 17.5M9 11L12 17.5L15.5 11M7.5 8.5H11M15.5 11L14.5 7.5H17',
+    circles: [[5.5, 17.5, 3.5], [18.5, 17.5, 3.5]],
+  },
+  run: {
+    d: 'M14 8L11 13M11 13L15 16L14 21M11 13L8 17H4.5M7 10L10 7.5L14 8L16 11H19',
+    circles: [[15, 4, 2]],
+  },
 };

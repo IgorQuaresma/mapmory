@@ -15,6 +15,8 @@ export function styleUpdates(prev: Design, next: Design): StyleUpdate[] | null {
   if (a.themeId !== b.themeId || a.labelLanguage !== b.labelLanguage || a.roadWeight !== b.roadWeight) return null;
   // Route data lives in a GeoJSON source; any change rebuilds the style (setStyle with diff).
   if (JSON.stringify(prev.routes) !== JSON.stringify(next.routes)) return null;
+  const legRoutes = (d: Design) => d.sport?.legs.map((l) => `${l.id}:${l.routeId}`).join() ?? '';
+  if (legRoutes(prev) !== legRoutes(next)) return null;
   const updates: StyleUpdate[] = [];
   for (const key of Object.keys(PALETTE_TARGETS) as PaletteKey[]) {
     if (a.palette[key] === b.palette[key]) continue;

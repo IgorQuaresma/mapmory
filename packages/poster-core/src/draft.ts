@@ -6,13 +6,17 @@ import {
   type Design,
   type DesignText,
   type DraftInput,
+  type DraftSport,
   type LabelLanguage,
+  type Sport,
 } from '@mapmory/design-schema';
 import { clampWeight } from '@mapmory/fonts';
-import { MOOD_MARKER, MOOD_THEME, getTheme, type Theme } from '@mapmory/themes';
+import { MOOD_MARKER, MOOD_THEME, SPORT_THEME, disciplineColor, getTheme, type Theme } from '@mapmory/themes';
 import { formatCoordinates, formatDate } from './format';
 import { boundsOf, fitBounds, zoomForPlaceType } from './geo';
+import { panelTrimRects } from './layout';
 import { estimateTextWidth } from './preflight';
+import { defaultLegView, formatDuration, legLabel } from './sport';
 import { pageHeightDu, resolveTrim } from './units';
 
 export const DEFAULT_PAPER = 'A3' as const;
@@ -25,6 +29,7 @@ const AREA_TYPES = new Set(['district', 'city', 'county', 'state', 'country']);
  * zoom and style decision is made here so drafts are reproducible and testable.
  */
 export function generateDraft(input: DraftInput): Design {
+  if (input.sport) return generateRaceDraft(input, input.sport);
   const theme = getTheme(MOOD_THEME[input.mood]);
   const trimMm = resolveTrim(DEFAULT_PAPER, 'portrait');
   const page = { trimMm };
@@ -99,10 +104,186 @@ export function generateDraft(input: DraftInput): Design {
     ),
     routes: [],
     photos: [],
+    sport: null,
     attribution: { corner: 'bottom-right' },
   };
   return parseDesign(design);
 }
+
+const RACE_BAND_TOP_DU = 250;
+const RACE_BAND_BOTTOM_DU = 270;
+
+/**
+ * First draft of a race poster: the event name on top, one map panel per leg centred on the venue and zoomed to
+ * the typical size of that course, the stats under each panel and the finish time at the bottom. Importing the
+ * athlete's activity later replaces the views with the real routes.
+ */
+function generateRaceDraft(input: DraftInput, race: DraftSport): Design {
+  const theme = getTheme(SPORT_THEME);
+  const trimMm = resolveTrim(DEFAULT_PAPER, 'portrait');
+  const primary = input.places[0]!;
+  const lang = input.locale.slice(0, 2) as LabelLanguage;
+  const labelLanguage: LabelLanguage = (LABEL_LANGUAGES as readonly string[]).includes(lang)
+    ? lang
+    : 'local';
+  const venue: [number, number] = [round(primary.lngLat[0], 6), round(primary.lngLat[1], 6)];
+
+  const title = sanitizePlainText(input.title?.trim() || race.name?.trim() || primary.name, 120);
+  const subtitle = sanitizePlainText(
+    [primary.city ?? primary.name, primary.country].filter(Boolean).join(', '),
+    200,
+  );
+  const texts = defaultTexts(theme, {
+    title,
+    subtitle,
+    date: formatDate(input.date, input.locale),
+    coordinates: formatCoordinates(primary.lngLat),
+  }).map((t): DesignText => {
+    if (t.role === 'title') return { ...t, slot: 'top', sizeDu: 72 };
+    if (t.role === 'subtitle') return { ...t, slot: 'top' };
+    if (t.role === 'coordinates') return { ...t, visible: false };
+    return { ...t, order: 2 };
+  });
+  if (race.finishTimeS) {
+    const { title: tt } = theme.typography;
+    texts.push({
+      ...texts.find((t) => t.role === 'date')!,
+      id: 'finish',
+      role: 'custom',
+      content: formatDuration(race.finishTimeS),
+      fontId: tt.fontId,
+      weight: clampWeight(tt.fontId, tt.weight),
+      sizeDu: 76,
+      letterSpacing: 0.02,
+      uppercase: false,
+      order: 1,
+      visible: true,
+    });
+  }
+
+  const sport: Sport = {
+    event: race.event,
+    layout: 'columns',
+    gapDu: 24,
+    legs: race.legs.map((l, i) => ({
+      id: `leg${i + 1}`,
+      discipline: l.discipline,
+      label: legLabel(l.discipline, input.locale),
+      center: venue,
+      zoom: 12,
+      bearing: 0,
+      routeId: null,
+      distanceKm: l.distanceKm,
+      timeS: l.timeS,
+    })),
+    showStats: true,
+    statsFontId: theme.typography.body.fontId,
+    statsSizeDu: 15,
+    statsColor: theme.textColor,
+    units: input.locale === 'en-US' ? 'imperial' : 'metric',
+    finishTimeS: race.finishTimeS,
+  };
+  const design: Design = {
+    schemaVersion: SCHEMA_VERSION,
+    page: {
+      paper: DEFAULT_PAPER,
+      orientation: 'portrait',
+      trimMm,
+      marginDu: MARGIN_DU,
+      background: theme.pageBackground,
+      frame: { style: theme.frame.style, color: theme.frame.color, widthDu: 2, insetDu: 30 },
+    },
+    map: {
+      insetDu: {
+        top: RACE_BAND_TOP_DU,
+        right: MARGIN_DU,
+        bottom: RACE_BAND_BOTTOM_DU,
+        left: MARGIN_DU,
+      },
+      center: venue,
+      zoom: 12,
+      bearing: 0,
+      shape: theme.shape,
+      outline: { widthDu: 0, color: theme.textColor },
+      themeId: theme.id,
+      palette: { ...theme.palette },
+      layers: { ...theme.layers },
+      labelLanguage,
+      roadWeight: theme.roadWeight,
+    },
+    markers: [],
+    texts: fitAll(texts, MARGIN_DU),
+    routes: [],
+    photos: [],
+    sport,
+    attribution: { corner: 'bottom-right' },
+  };
+  return parseDesign(withLegViews(design));
+}
+
+/** Gives every leg without a route the default view for its discipline and panel size. */
+export function withLegViews(design: Design, only?: string[]): Design {
+  if (!design.sport) return design;
+  const H = pageHeightDu(design.page);
+  const { insetDu } = design.map;
+  const area = {
+    x: insetDu.left,
+    y: insetDu.top,
+    w: 1000 - insetDu.left - insetDu.right,
+    h: H - insetDu.top - insetDu.bottom,
+  };
+  const rects = panelTrimRects(design, area);
+  const legs = design.sport.legs.map((leg, i) => {
+    if (leg.routeId || (only && !only.includes(leg.id))) return leg;
+    const r = rects[i]!;
+    return { ...leg, ...defaultLegView(leg.center, leg.discipline, leg.distanceKm, r.w, r.h) };
+  });
+  return { ...design, sport: { ...design.sport, legs } };
+}
+
+/**
+ * Turns a single-map poster into a race poster (the editor's "race poster" switch). The place, theme, texts and
+ * routes stay; the panels start on the current map centre.
+ */
+export function makeRacePoster(design: Design, race: DraftSport, locale: string): Design {
+  const theme = getTheme(design.map.themeId);
+  const center: [number, number] = [round(design.map.center[0], 6), round(design.map.center[1], 6)];
+  const sport: Sport = {
+    event: race.event,
+    layout: 'columns',
+    gapDu: 24,
+    legs: race.legs.map((l, i) => ({
+      id: `leg${i + 1}`,
+      discipline: l.discipline,
+      label: legLabel(l.discipline, locale),
+      center,
+      zoom: design.map.zoom,
+      bearing: 0,
+      routeId: null,
+      distanceKm: l.distanceKm,
+      timeS: l.timeS,
+    })),
+    showStats: true,
+    statsFontId: theme.typography.body.fontId,
+    statsSizeDu: 15,
+    statsColor: theme.textColor,
+    units: locale === 'en-US' ? 'imperial' : 'metric',
+    finishTimeS: race.finishTimeS,
+  };
+  return withLegViews({ ...design, sport });
+}
+
+/** Back to a single map showing the first leg's view. */
+export function makeSingleMapPoster(design: Design): Design {
+  const first = design.sport?.legs[0];
+  if (!first) return design;
+  return {
+    ...design,
+    sport: null,
+    map: { ...design.map, center: first.center, zoom: first.zoom, bearing: first.bearing },
+  };
+}
+
 
 export function defaultTexts(
   theme: Theme,
@@ -138,15 +319,23 @@ export function applyTheme(design: Design, themeId: Design['map']['themeId']): D
       outline: { ...design.map.outline, color: theme.textColor },
     },
     markers: design.markers.map((m) => ({ ...m, color: theme.accent })),
+    // Routes shown as race legs take the theme's leg colours.
+    routes: design.routes.map((r) => {
+      const leg = design.sport?.legs.find((l) => l.routeId === r.id);
+      return leg ? { ...r, color: disciplineColor(themeId, leg.discipline) } : r;
+    }),
+    sport: design.sport && { ...design.sport, statsColor: theme.textColor, statsFontId: body.fontId },
     texts: fitAll(
       design.texts.map((t) => {
-        const typo = t.role === 'title' ? title : body;
+        // A race poster's finish time is display type like the title, but never uppercased or widely spaced.
+        const finish = t.id === 'finish';
+        const typo = t.role === 'title' || finish ? title : body;
         return {
           ...t,
           fontId: typo.fontId,
           weight: clampWeight(typo.fontId, typo.weight),
-          uppercase: t.role === 'coordinates' ? false : typo.uppercase,
-          letterSpacing: t.role === 'coordinates' ? 0.15 : typo.letterSpacing,
+          uppercase: t.role === 'coordinates' || finish ? false : typo.uppercase,
+          letterSpacing: t.role === 'coordinates' ? 0.15 : finish ? 0.02 : typo.letterSpacing,
           color: theme.textColor,
         };
       }),

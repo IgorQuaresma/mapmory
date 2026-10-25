@@ -6,6 +6,7 @@ import type {
 import type { Design, LayerKey, PaletteKey } from '@mapmory/design-schema';
 import { FONT_CATALOG, LABEL_FALLBACK_FONTSTACK } from '@mapmory/fonts';
 import { getTheme } from '@mapmory/themes';
+import { panelRoutes } from './sport';
 
 export interface StyleEndpoints {
   /** XYZ tile URL template served by Martin, e.g. https://tiles.example.com/basemap/{z}/{x}/{y} */
@@ -23,8 +24,8 @@ const DASHES = { dashed: [2.5, 1.6], dotted: [0.1, 1.8] } as const;
  * Routes are drawn by the map renderers themselves (not the overlay), so preview and print match exactly like
  * the streets do. Widths are in logical pixels, which equal design units (plan §7.1).
  */
-function routesGeoJson(design: Design) {
-  const features = design.routes.flatMap((r) => {
+function routesGeoJson(design: Design, legId: string | null) {
+  const features = panelRoutes(design, legId).flatMap((r) => {
     const props = { id: r.id, color: r.color, width: r.widthDu, style: r.style };
     const line = { type: 'Feature' as const, properties: props, geometry: { type: 'LineString' as const, coordinates: r.points } };
     if (!r.endpoints) return [line];
@@ -148,7 +149,12 @@ export function labelFontstack(design: Design): string[] {
  * export renderer (MapLibre Native), so both draw the same map (plan §2, §7.1).
  * The style uses no raster sprites or patterns so it stays sharp at any pixel ratio.
  */
-export function buildStyle(design: Design, endpoints: StyleEndpoints): StyleSpecification {
+export function buildStyle(
+  design: Design,
+  endpoints: StyleEndpoints,
+  /** On a race poster, the leg whose panel this style draws: only its route (and unassigned ones) are shown. */
+  legId: string | null = null,
+): StyleSpecification {
   const { palette, layers, roadWeight, labelLanguage } = design.map;
   const theme = getTheme(design.map.themeId);
   const vis = (key: LayerKey) => ({ visibility: layers[key] ? ('visible' as const) : ('none' as const) });
@@ -334,7 +340,7 @@ export function buildStyle(design: Design, endpoints: StyleEndpoints): StyleSpec
         // Attribution is rendered by the poster overlay so it is always printed (plan §7.5).
         attribution: '',
       },
-      [ROUTES]: { type: 'geojson', data: routesGeoJson(design) },
+      [ROUTES]: { type: 'geojson', data: routesGeoJson(design, legId) },
     },
     layers: styleLayers,
   };

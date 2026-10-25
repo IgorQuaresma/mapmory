@@ -1,6 +1,7 @@
 import { MAX_ROUTE_POINTS, type Design, type Route } from '@mapmory/design-schema';
-import { fitBounds, project } from './geo';
+import { project } from './geo';
 import { computeLayout } from './layout';
+import { fitView } from './sport';
 
 type Pt = [number, number];
 const round5 = (p: Pt): Pt => [Number(p[0].toFixed(5)), Number(p[1].toFixed(5))];
@@ -87,24 +88,16 @@ export function routesBounds(
 /**
  * Map view that frames the routes inside the *visible* map: for a circle the inscribed square, for a heart its
  * central area, for an arch the area below the curve (round and heart maps would otherwise cut route ends off).
+ * On a race poster, pass `legId` to frame that leg's panel.
  */
-export function fitRoutesView(design: Design, routes: Pick<Route, 'points'>[] = design.routes) {
+export function fitRoutesView(
+  design: Design,
+  routes: Pick<Route, 'points'>[] = design.routes,
+  legId: string | null = null,
+) {
   const bbox = routesBounds(routes);
   if (!bbox) return null;
-  const { w, h } = computeLayout(design).map.trimRect;
-  const min = Math.min(w, h);
-  const box =
-    design.map.shape === 'circle'
-      ? { w: min / Math.SQRT2, h: min / Math.SQRT2 }
-      : design.map.shape === 'heart'
-        ? { w: min * 0.55, h: min * 0.55 }
-        : design.map.shape === 'arch'
-          ? { w: w * 0.9, h: Math.max(h - w * 0.35, h * 0.5) }
-          : { w, h };
-  const fit = fitBounds(bbox, box.w, box.h, {
-    padding: Math.min(box.w, box.h) * 0.08,
-    maxZoom: 16,
-    minZoom: 2,
-  });
-  return { center: fit.center, zoom: fit.zoom, bearing: 0 };
+  const layout = computeLayout(design);
+  const panel = layout.panels.find((p) => p.leg?.id === legId) ?? layout.panels[0]!;
+  return fitView(bbox, panel.trimRect.w, panel.trimRect.h, design.map.shape);
 }

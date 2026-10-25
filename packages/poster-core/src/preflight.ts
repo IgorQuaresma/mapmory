@@ -14,7 +14,9 @@ export interface PreflightIssue {
     | 'exceeds-max-size'
     | 'empty-title'
     | 'marker-outside-map'
-    | 'photo-low-resolution';
+    | 'photo-low-resolution'
+    | 'leg-without-route'
+    | 'stats-too-wide';
   severity: PreflightSeverity;
   target?: string;
   message: string;
@@ -75,6 +77,17 @@ export function preflight(
     const ppi = p.pxWidth / printedInches;
     if (ppi < 150) {
       issues.push({ code: 'photo-low-resolution', severity: 'warning', target: p.id, message: `This photo prints at about ${Math.round(ppi)} pixels per inch and may look soft. Make it smaller or use a larger image.` });
+    }
+  }
+
+  // Race posters: every leg should show its route, and the figures must fit under their panel.
+  for (const p of layout.panels) {
+    if (p.leg && !p.leg.routeId) {
+      issues.push({ code: 'leg-without-route', severity: 'info', target: p.leg.id, message: `The ${p.leg.label} panel has no route yet. Import your activity to draw it.` });
+    }
+    const s = p.stats;
+    if (s && s.lines.some((line) => estimateTextWidth({ text: line, sizeDu: s.sizeDu, letterSpacingEm: 0 } as never) > s.w)) {
+      issues.push({ code: 'stats-too-wide', severity: 'warning', target: p.leg!.id, message: 'The figures are wider than their panel. Make the stats text smaller or use fewer panels side by side.' });
     }
   }
 
