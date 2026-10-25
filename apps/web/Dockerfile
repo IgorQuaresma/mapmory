@@ -16,6 +16,8 @@ RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest \
  && xcaddy build ${CADDY_VERSION} --replace golang.org/x/net=golang.org/x/net@v0.60.0 --output /usr/bin/caddy
 
 FROM caddy:2-alpine AS runtime
+# The caddy base image is rebuilt less often than Alpine ships security fixes (e.g. brotli-libs, CVE-2026-111497).
+RUN apk upgrade --no-cache
 COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 COPY infra/caddy/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /repo/apps/web/dist /srv
