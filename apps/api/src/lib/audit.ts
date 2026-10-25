@@ -6,6 +6,7 @@ export type AuditAction =
   | 'auth.signed_in'
   | 'project.created'
   | 'project.deleted'
+  | 'photo.uploaded'
   | 'export.requested'
   | 'account.data_exported'
   | 'account.deleted';

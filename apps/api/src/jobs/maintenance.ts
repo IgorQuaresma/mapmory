@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import { and, eq, inArray, isNotNull, lt, sql } from 'drizzle-orm';
-import { anonSessions, auditEvents, designRevisions, exportJobs, projects, type Database } from '@mapmory/db';
+import { anonSessions, auditEvents, designRevisions, exportJobs, photos, projects, type Database } from '@mapmory/db';
 import type { FastifyBaseLogger } from 'fastify';
 import { Redis } from 'ioredis';
 import type { Config } from '../config';
@@ -25,11 +25,40 @@ export async function runMaintenance(deps: { db: Database; store: ObjectStore; c
     await db.update(exportJobs).set({ status: 'expired', objectKey: null }).where(inArray(exportJobs.id, expired.map((e) => e.id)));
   }
 
+  // Photos of expiring anonymous projects: delete the files before the rows cascade away.
+  const anonPhotoKeys = (
+    await db
+      .select({ key: photos.objectKey })
+      .from(photos)
+      .innerJoin(projects, eq(projects.id, photos.projectId))
+      .where(and(isNotNull(projects.ownerAnonId), lt(projects.expiresAt, now)))
+  ).map((r) => r.key);
+  if (anonPhotoKeys.length) await store.deleteObjects(anonPhotoKeys);
   const anonDeleted = await db
     .delete(projects)
     .where(and(isNotNull(projects.ownerAnonId), lt(projects.expiresAt, now)))
     .returning({ id: projects.id });
   await db.delete(anonSessions).where(lt(anonSessions.expiresAt, now));
+
+  // Photos no longer used by the poster (removed in the editor) are deleted after a 24 h grace period, so undo can
+  // still bring them back. Photos referenced by the current design or by an active export are kept.
+  const unused = await db.execute<{ id: string; object_key: string }>(sql`
+    SELECT ph.id, ph.object_key FROM ${photos} ph
+    JOIN ${projects} p ON p.id = ph.project_id
+    WHERE ph.created_at < ${new Date(now.getTime() - 86400_000)}
+      AND NOT EXISTS (
+        SELECT 1 FROM ${designRevisions} r
+        WHERE r.project_id = ph.project_id AND r.revision = p.current_revision
+          AND r.document->'photos' @> jsonb_build_array(jsonb_build_object('photoId', ph.id::text)))
+      AND NOT EXISTS (
+        SELECT 1 FROM ${exportJobs} e JOIN ${designRevisions} r ON r.id = e.revision_id
+        WHERE e.status IN ('queued','rendering','composing','uploading')
+          AND r.document->'photos' @> jsonb_build_array(jsonb_build_object('photoId', ph.id::text)))
+    LIMIT 1000`);
+  if (unused.rows.length) {
+    await store.deleteObjects(unused.rows.map((r) => r.object_key));
+    await db.delete(photos).where(inArray(photos.id, unused.rows.map((r) => r.id)));
+  }
 
   // Keep revision 1 (the draft, used by "reset"), the last N revisions, and anything an export still references.
   const trimmed = await db.execute(sql`
@@ -48,7 +77,7 @@ export async function runMaintenance(deps: { db: Database; store: ObjectStore; c
   await db.delete(auditEvents).where(lt(auditEvents.createdAt, new Date(now.getTime() - 365 * 86400_000)));
 
   log.info(
-    { expiredExports: expired.length, anonProjectsDeleted: anonDeleted.length, revisionsTrimmed: trimmed.rowCount ?? 0, staleJobs: stale.length },
+    { expiredExports: expired.length, unusedPhotosDeleted: unused.rows.length, anonProjectsDeleted: anonDeleted.length, revisionsTrimmed: trimmed.rowCount ?? 0, staleJobs: stale.length },
     'maintenance finished',
   );
 }

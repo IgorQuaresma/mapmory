@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
-import { designRevisions, exportJobs, projects } from '@mapmory/db';
+import { designRevisions, exportJobs, photos, projects } from '@mapmory/db';
 import { CreateProjectRequestSchema, DesignSchema, migrateDesign, parseDesign, type Design } from '@mapmory/design-schema';
 import { canonicalJson, generateDraft } from '@mapmory/poster-core';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -89,6 +89,8 @@ export const projectRoutes = (deps: AppDeps): FastifyPluginAsyncZod => async (ap
     '/projects/:id/design',
     {
       schema: { params: IdParams, body: z.object({ design: DesignSchema }), headers: z.object({ 'if-match': z.string().regex(/^"?\d+"?$/) }) },
+      // Designs with routes can reach 192 KB (MAX_DESIGN_BYTES); JSON overhead needs a little more.
+      bodyLimit: 256 * 1024,
       config: { rateLimit: { max: 120, timeWindow: '1 minute' } },
     },
     async (req, reply) => {
@@ -143,13 +145,13 @@ export const projectRoutes = (deps: AppDeps): FastifyPluginAsyncZod => async (ap
   app.delete('/projects/:id', { schema: { params: IdParams } }, async (req, reply) => {
     const [p] = await db.select({ id: projects.id }).from(projects).where(ownedProject(req, req.params.id));
     if (!p) throw notFound();
-    const keys = await db
-      .select({ key: exportJobs.objectKey })
-      .from(exportJobs)
-      .where(and(eq(exportJobs.projectId, p.id)));
+    const keys = [
+      ...(await db.select({ key: exportJobs.objectKey }).from(exportJobs).where(and(eq(exportJobs.projectId, p.id)))),
+      ...(await db.select({ key: photos.objectKey }).from(photos).where(eq(photos.projectId, p.id))),
+    ];
     await db.delete(projects).where(inArray(projects.id, [p.id]));
     const objectKeys = keys.map((k) => k.key).filter((k): k is string => !!k);
-    if (objectKeys.length) await deps.store.deleteObjects(objectKeys).catch((err) => req.log.warn({ err }, 'export object cleanup failed'));
+    if (objectKeys.length) await deps.store.deleteObjects(objectKeys).catch((err) => req.log.warn({ err }, 'object cleanup failed'));
     await audit(db, config.APP_SECRET, { actor: req.identity.user?.id ?? `anon:${req.identity.anonId}`, action: 'project.deleted', target: p.id, ip: req.ip });
     reply.status(204);
   });

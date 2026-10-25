@@ -1,9 +1,13 @@
-import { CreateBucketCommand, DeleteObjectsCommand, GetObjectCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, DeleteObjectsCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import type { Readable } from 'node:stream';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Config } from '../config';
 
 export interface ObjectStore {
   signedDownloadUrl(key: string, filename: string, contentType: string): Promise<string>;
+  putObject(key: string, body: Buffer, contentType: string): Promise<void>;
+  /** Streams an object; null when it does not exist. */
+  getObject(key: string): Promise<Readable | null>;
   deleteObjects(keys: string[]): Promise<void>;
   ensureBucket(): Promise<void>;
 }
@@ -34,6 +38,26 @@ export function createObjectStore(config: Config): ObjectStore {
         }),
         { expiresIn: 15 * 60 },
       );
+    },
+    async putObject(key, body, contentType) {
+      await client.send(
+        new PutObjectCommand({
+          Bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+          ...(process.env.S3_SSE ? { ServerSideEncryption: process.env.S3_SSE as 'AES256' } : {}),
+        }),
+      );
+    },
+    async getObject(key) {
+      try {
+        const res = await client.send(new GetObjectCommand({ Bucket, Key: key }));
+        return (res.Body as Readable | undefined) ?? null;
+      } catch (err) {
+        if ((err as { name?: string }).name === 'NoSuchKey') return null;
+        throw err;
+      }
     },
     async deleteObjects(keys) {
       for (let i = 0; i < keys.length; i += 1000) {

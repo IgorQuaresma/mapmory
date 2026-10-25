@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import { designRevisions, exportJobs, projects, user as users, verification } from '@mapmory/db';
+import { designRevisions, exportJobs, photos, projects, user as users, verification } from '@mapmory/db';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { AppDeps } from '../app';
 import { audit } from '../lib/audit';
@@ -19,6 +19,7 @@ export const meRoutes = (deps: AppDeps): FastifyPluginAsyncZod => async (app) =>
       ? await db.select().from(designRevisions).where(inArray(designRevisions.projectId, ids))
       : [];
     const jobs = await db.select().from(exportJobs).where(eq(exportJobs.requestedBy, me.id));
+    const ownPhotos = ids.length ? await db.select().from(photos).where(inArray(photos.projectId, ids)) : [];
     const current = new Map(revisions.map((r) => [`${r.projectId}:${r.revision}`, r.document]));
     await audit(db, config.APP_SECRET, { actor: me.id, action: 'account.data_exported', ip: req.ip });
     reply
@@ -37,6 +38,8 @@ export const meRoutes = (deps: AppDeps): FastifyPluginAsyncZod => async (app) =>
         memoryText: p.memoryTextEnc ? decrypt(p.memoryTextEnc, config.DATA_ENCRYPTION_KEY) : null,
         design: current.get(`${p.id}:${p.currentRevision}`) ?? null,
         revisionCount: revisions.filter((r) => r.projectId === p.id).length,
+        // Image files are served at /api/v1/photos/:id while signed in; stored without metadata.
+        photos: ownPhotos.filter((ph) => ph.projectId === p.id).map((ph) => ({ id: ph.id, width: ph.width, height: ph.height, bytes: ph.bytes, createdAt: ph.createdAt.toISOString() })),
       })),
       exports: jobs.map((j) => ({ id: j.id, projectId: j.projectId, options: j.options, status: j.status, createdAt: j.createdAt.toISOString(), finishedAt: j.finishedAt?.toISOString() ?? null })),
     };
@@ -44,7 +47,10 @@ export const meRoutes = (deps: AppDeps): FastifyPluginAsyncZod => async (app) =>
 
   app.delete('/me', async (req, reply) => {
     const me = requireUser(req);
-    const keys = (await db.select({ key: exportJobs.objectKey }).from(exportJobs).where(eq(exportJobs.requestedBy, me.id)))
+    const keys = [
+      ...(await db.select({ key: exportJobs.objectKey }).from(exportJobs).where(eq(exportJobs.requestedBy, me.id))),
+      ...(await db.select({ key: photos.objectKey }).from(photos).innerJoin(projects, eq(projects.id, photos.projectId)).where(eq(projects.ownerUserId, me.id))),
+    ]
       .map((k) => k.key)
       .filter((k): k is string => !!k);
     await db.transaction(async (tx) => {
