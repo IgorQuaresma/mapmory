@@ -16,7 +16,9 @@ FROM mcr.microsoft.com/playwright:v1.64.1-noble AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
       xvfb xauth libgl1 libgl1-mesa-dri libegl1 libgles2 libopengl0 libglx-mesa0 libcurl4 libuv1 libjpeg-turbo8 libpng16-16 libicu74 \
       poppler-utils ghostscript tini \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/lib/node_modules/npm /usr/lib/node_modules/corepack /usr/lib/node_modules/yarn /usr/bin/npm /usr/bin/npx /usr/bin/corepack /usr/bin/yarn
+# (No package managers at runtime: the worker runs on plain node, and npm/corepack/yarn carry their own CVEs.)
 ENV NODE_ENV=production PRINT_PAGE_DIST=/app/print-page RENDER_TMP_DIR=/tmp/render PDFTOPPM_PATH=pdftoppm GHOSTSCRIPT_PATH=gs
 WORKDIR /app
 COPY --from=build --chown=pwuser:pwuser /out /app

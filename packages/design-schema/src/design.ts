@@ -13,7 +13,7 @@ import {
   THEME_IDS,
 } from './catalog';
 
-export const SCHEMA_VERSION = 1 as const;
+export const SCHEMA_VERSION = 2 as const;
 /** The trim width of every page, in design units (plan §4.1). */
 export const PAGE_WIDTH_DU = 1000;
 export const MAX_DESIGN_BYTES = 64 * 1024;

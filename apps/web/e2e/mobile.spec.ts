@@ -9,8 +9,8 @@ test('mobile: full-screen preview with bottom-sheet panels', async ({ page }) =>
   await expect(sheet).toBeVisible();
   await sheet.getByRole('button', { name: 'Style' }).click();
   await expect(sheet.getByRole('tab', { name: 'Style', selected: true })).toBeVisible();
-  await page.getByTestId('theme-ocean').click();
-  await expect(page.getByTestId('theme-ocean')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('theme-riviera').click();
+  await expect(page.getByTestId('theme-riviera')).toHaveAttribute('aria-checked', 'true');
   await expectAccessible(page, 'editor (mobile)');
   // No horizontal page scroll on phones.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

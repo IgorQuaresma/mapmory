@@ -4,6 +4,7 @@ import { buildApp } from './app';
 import { loadConfig } from './config';
 import { createGeocoder } from './geocoding';
 import { createInterpretationService } from './interpretation/service';
+import { startExportNotifier } from './jobs/export-notifier';
 import { scheduleMaintenance } from './jobs/maintenance';
 import { createExportQueues } from './jobs/queue';
 import { createAltcha } from './lib/altcha';
@@ -30,11 +31,15 @@ const interpretation = createInterpretationService(config, { redis, geocoder, lo
 const app = await buildApp({ config, db, redis, auth, geocoder, interpretation, store, queues, altcha });
 if (config.S3_CREATE_BUCKET) await store.ensureBucket();
 const stopMaintenance = config.ENABLE_MAINTENANCE ? await scheduleMaintenance({ db, store, config, log: app.log }) : null;
+const stopNotifier = config.ENABLE_EXPORT_EMAILS
+  ? startExportNotifier({ db, redis, mailer, config, log: app.log, redisUrl: config.REDIS_URL })
+  : null;
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down');
   await app.close();
   await stopMaintenance?.();
+  await stopNotifier?.();
   await queues.close();
   redis.disconnect();
   await pool.end();

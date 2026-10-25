@@ -42,9 +42,10 @@ pnpm dev                        # web :5173, API :4000, render worker
 
 Open http://localhost:5173. Sign-in emails land in Mailpit at http://localhost:8025.
 
-The dev tiles cover **Paris, Münster, Lisbon and Manhattan** (`infra/scripts/dev-regions.geojson`). With
-`GEOCODER=stub` the place search only knows a few places in those cities. Set `GEOCODER=photon` to use the public
-Photon instance (fair use, development only).
+The dev tiles cover **Paris, Münster, Lisbon and Manhattan** by default (`infra/scripts/dev-regions.geojson`, ~80 MB).
+`DEV_REGION=portugal FORCE=1 pnpm setup:tiles` adds all of mainland Portugal (~690 MB, about 3 minutes). With
+`GEOCODER=stub` the place search only knows a few places in the four cities; set `GEOCODER=photon` to search
+anywhere with the public Photon instance (fair use, development only).
 
 Interpretation runs without an LLM by default (`LLM_PROVIDER=heuristic`). To use one:
 - Claude: `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=…`
@@ -71,7 +72,8 @@ Without the backend, `VITE_API_MOCK=1 pnpm --filter @mapmory/web dev` runs the w
 | `pnpm --filter @mapmory/renderer test` | export correctness (boxes, fonts, DPI, ICC, attribution), CMYK, golden-image visual regression |
 | `pnpm --filter @mapmory/renderer parity [threshold] [--labels]` | preview (GL JS) vs export (Native) pixel parity across all themes |
 | `pnpm --filter @mapmory/renderer bench A0 300` | render time and peak memory for a paper size and DPI |
-| `pnpm test:e2e` | Playwright: full flow, keyboard-only, mobile, axe-core WCAG 2.2 AA checks (mock API) |
+| `pnpm test:e2e` | Playwright: full flow, keyboard-only, mobile, sharing, axe-core WCAG 2.2 AA checks (mock API) |
+| `pnpm --filter @mapmory/web e2e:real` | Playwright against the running stack: ALTCHA, geocoding, magic link via Mailpit, real render, S3 download |
 | `pnpm --filter @mapmory/api evals <provider>` | LLM interpretation evals (50 cases; see ADR 0003) |
 | `k6 run infra/load/api.js` | API load test |
 

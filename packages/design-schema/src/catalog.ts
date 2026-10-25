@@ -7,21 +7,23 @@ export const THEME_IDS = [
   'classic-ink',
   'minimal',
   'blush',
-  'sepia',
-  'midnight',
-  'forest',
+  'old-letter',
+  'night-train',
+  'lavender-field',
   'gold-ink',
-  'ocean',
+  'riviera',
 ] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 export const FONT_IDS = [
   'playfair-display',
   'montserrat',
-  'cormorant-garamond',
+  'fraunces',
   'inter',
   'josefin-sans',
   'great-vibes',
+  'bricolage-grotesque',
+  'dm-mono',
 ] as const;
 export type FontId = (typeof FONT_IDS)[number];
 
@@ -31,7 +33,7 @@ export type MarkerIcon = (typeof MARKER_ICONS)[number];
 export const MAP_SHAPES = ['rect', 'rounded', 'circle', 'heart', 'arch'] as const;
 export type MapShape = (typeof MAP_SHAPES)[number];
 
-export const FRAME_STYLES = ['none', 'thin-line', 'double-line', 'thick-line'] as const;
+export const FRAME_STYLES = ['none', 'thin-line', 'double-line', 'thick-line', 'airmail'] as const;
 export type FrameStyle = (typeof FRAME_STYLES)[number];
 
 export const TEXT_SLOTS = ['top', 'bottom', 'map-top', 'map-bottom'] as const;

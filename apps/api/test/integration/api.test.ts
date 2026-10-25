@@ -4,6 +4,7 @@ import { deriveKey } from 'altcha-lib/algorithms/pbkdf2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { exportJobs, projects } from '@mapmory/db';
 import type { Design, DraftInput } from '@mapmory/design-schema';
+import { notifyExportReady } from '../../src/jobs/export-notifier';
 import { runMaintenance } from '../../src/jobs/maintenance';
 import { Client, startHarness, type Harness } from './harness';
 
@@ -221,6 +222,19 @@ describe('projects, designs and exports', () => {
     await signIn(stranger, 'mallory@example.com');
     expect((await stranger.request('GET', `/api/v1/exports/${job.id}`)).statusCode).toBe(404);
     expect((await stranger.request('POST', `/api/v1/projects/${projectId}/exports`, options)).statusCode).toBe(404);
+  });
+
+  it('emails the owner once when a slow export finishes, not for quick ones', async () => {
+    const [job] = await h.db.select().from(exportJobs).where(eq(exportJobs.projectId, projectId));
+    const sent: { to: string; url: string }[] = [];
+    const deps = { db: h.db, redis: h.redis, mailer: { sendExportReady: async (to: string, url: string) => void sent.push({ to, url }) }, config: { WEB_ORIGIN: 'http://localhost:5173' }, log: { warn: () => {} } };
+    const started = new Date(Date.now() - 5000);
+    await h.db.update(exportJobs).set({ startedAt: started, finishedAt: new Date() }).where(eq(exportJobs.id, job!.id));
+    expect(await notifyExportReady(deps, job!.id, 'export-small')).toBe(false);
+    await h.db.update(exportJobs).set({ startedAt: new Date(Date.now() - 90_000) }).where(eq(exportJobs.id, job!.id));
+    expect(await notifyExportReady(deps, job!.id, 'export-small')).toBe(true);
+    expect(await notifyExportReady(deps, job!.id, 'export-large')).toBe(false);
+    expect(sent).toEqual([{ to: 'alice@example.com', url: `http://localhost:5173/design/${projectId}/export` }]);
   });
 
   it('refuses CMYK while the feature is disabled', async () => {

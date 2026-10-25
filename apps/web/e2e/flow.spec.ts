@@ -29,15 +29,15 @@ test('memory → place → editor → customize → undo/redo → export → dow
   await expectAccessible(page, 'editor');
 
   // Theme
-  await page.getByTestId('theme-midnight').click();
-  await expect(page.getByTestId('theme-midnight')).toHaveAttribute('aria-checked', 'true');
-  await expect(title).toHaveCSS('color', 'rgb(232, 227, 211)');
+  await page.getByTestId('theme-night-train').click();
+  await expect(page.getByTestId('theme-night-train')).toHaveAttribute('aria-checked', 'true');
+  await expect(title).toHaveCSS('color', 'rgb(255, 231, 163)');
 
   // Colour via hex input
   await page.getByLabel('Land', { exact: true }).fill('#123456');
   await expect(page.getByLabel('Land', { exact: true })).toHaveValue('#123456');
 
-  // Text (Midnight sets titles in capitals, so compare case-insensitively)
+  // Text (Night Train sets titles in capitals, so compare case-insensitively)
   await page.getByRole('tab', { name: 'Text' }).click();
   await page.getByTestId('text-input-title').fill('Forever');
   await page.getByTestId('text-input-title').blur();

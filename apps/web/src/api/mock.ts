@@ -11,6 +11,7 @@ import {
   MAX_MEMORY_TEXT,
   MAX_RENDER_PX,
   PAPER_SIZES,
+  migrateDesign,
   parseDesign,
   type Design,
   type ExportJob,
@@ -67,7 +68,12 @@ const now = () => new Date().toISOString();
 function load(): MockDb {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as MockDb;
+    if (raw) {
+      const db = JSON.parse(raw) as MockDb;
+      // Designs stored by an older app version are migrated, like the real API does on read.
+      for (const p of Object.values(db.projects)) p.revisions = p.revisions.map((d) => migrateDesign(d));
+      return db;
+    }
   } catch {
     /* storage unavailable */
   }

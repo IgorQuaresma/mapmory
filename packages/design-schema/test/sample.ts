@@ -1,7 +1,7 @@
 import type { Design } from '../src';
 
 export const sampleDesign: Design = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   page: {
     paper: 'A3',
     orientation: 'portrait',

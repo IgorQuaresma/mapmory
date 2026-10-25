@@ -60,7 +60,7 @@ export async function startHarness(): Promise<Harness> {
     deleteObjects: async (keys) => void deletedObjects.push(...keys),
     ensureBucket: async () => {},
   };
-  const auth = createAuth(config, db, { sendMagicLink: async (to, url) => void mails.push({ to, url }) });
+  const auth = createAuth(config, db, { sendMagicLink: async (to, url) => void mails.push({ to, url }), sendExportReady: async () => {} });
   const geocoder = createGeocoder(config, redis);
   const interpretation = createInterpretationService(config, { redis, geocoder, log: { warn: () => {} } });
   const altcha = createAltcha({ secret: config.APP_SECRET, cost: config.ALTCHA_COST, redis });

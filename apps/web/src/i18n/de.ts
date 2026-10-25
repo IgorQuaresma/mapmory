@@ -98,7 +98,7 @@ export const de: Resources = {
     romantic: 'Romantisch', nostalgic: 'Nostalgisch', adventurous: 'Abenteuerlich', celebratory: 'Festlich', calm: 'Ruhig', bittersweet: 'Bittersüß', neutral: 'Neutral',
   },
   themes: {
-    'classic-ink': 'Klassische Tinte', minimal: 'Minimal', blush: 'Rosé', sepia: 'Sepia', midnight: 'Mitternacht', forest: 'Wald', 'gold-ink': 'Goldtinte', ocean: 'Ozean',
+    'classic-ink': 'Klassische Tinte', minimal: 'Minimal', blush: 'Rosé', 'old-letter': 'Alter Brief', 'night-train': 'Nachtzug', 'lavender-field': 'Lavendelfeld', 'gold-ink': 'Goldtinte', riviera: 'Riviera',
   },
   editor: {
     loading: 'Wird geladen…',
@@ -236,7 +236,7 @@ export const de: Resources = {
   },
   shapes: { rect: 'Rechteck', rounded: 'Abgerundet', circle: 'Kreis', heart: 'Herz', arch: 'Bogen' },
   icons: { heart: 'Herz', pin: 'Stecknadel', star: 'Stern', dot: 'Punkt', ring: 'Ring', flag: 'Fahne', home: 'Haus' },
-  frames: { none: 'Keiner', 'thin-line': 'Dünn', 'double-line': 'Doppelt', 'thick-line': 'Dick' },
+  frames: { none: 'Keiner', 'thin-line': 'Dünn', 'double-line': 'Doppelt', 'thick-line': 'Dick', airmail: 'Luftpost' },
   slots: { top: 'Über der Karte', bottom: 'Unter der Karte', 'map-top': 'Auf der Karte (oben)', 'map-bottom': 'Auf der Karte (unten)' },
   corners: { 'bottom-right': 'Unten rechts', 'bottom-left': 'Unten links', 'top-right': 'Oben rechts', 'top-left': 'Oben links' },
   languages: { local: 'Lokale Namen', en: 'Englisch', de: 'Deutsch', fr: 'Französisch', es: 'Spanisch', pt: 'Portugiesisch', it: 'Italienisch', nl: 'Niederländisch' },

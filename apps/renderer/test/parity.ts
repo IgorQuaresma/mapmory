@@ -17,6 +17,7 @@ import { renderMapRaster } from '../src/map-raster';
 
 const threshold = Number(process.argv.find((a) => /^\d/.test(a)) ?? 0.06);
 const withLabels = process.argv.includes('--labels');
+const only = process.env.PARITY_THEMES?.split(',');
 const deps = loadConfigForCli();
 const outDir = path.resolve('test/__output__/parity');
 await mkdir(outDir, { recursive: true });
@@ -24,7 +25,7 @@ const base = migrateDesign(JSON.parse(await readFile('test/fixtures/paris-classi
 
 let failed = false;
 try {
-  for (const themeId of THEME_IDS) {
+  for (const themeId of THEME_IDS.filter((t) => !only || only.includes(t))) {
     // Markers are overlay elements, not map pixels — leave them out of the comparison.
     const design = applyTheme({ ...base, markers: [], map: { ...base.map, layers: { ...base.map.layers, labels: withLabels } } }, themeId);
     const layout = computeLayout(design);
@@ -33,41 +34,55 @@ try {
     const w = Math.round(rect.w);
     const h = Math.round(rect.h);
 
-    const native = await renderMapRaster({ style, viewport: { ...layout.map.viewport, width: w, height: h }, pixelRatio: 1, allowedOrigins: [new URL(deps.tilesUrl).origin] });
-    const nativePng = await sharp(native.data, { raw: { width: native.width, height: native.height, channels: 4 } }).png().toBuffer();
+    // Martin generates label glyphs on first request, and a cold first render can be captured before every tile or
+    // glyph arrived. A theme that misses the threshold is measured once more; a real difference fails both times.
+    let attempt = 0;
+    let nativePng: Buffer;
+    let b: PNG;
+    let diff: PNG;
+    let ratio: number;
+    do {
+      attempt += 1;
+      const native = await renderMapRaster({ style, viewport: { ...layout.map.viewport, width: w, height: h }, pixelRatio: 1, allowedOrigins: [new URL(deps.tilesUrl).origin] });
+      nativePng = await sharp(native.data, { raw: { width: native.width, height: native.height, channels: 4 } }).png().toBuffer();
 
-    // A page whose CSS width equals the poster width in design units → 1 du = 1 CSS px.
-    const mmPerPx = 25.4 / 96;
-    const geometry = { pageMm: { w: layout.outer.w * mmPerPx, h: layout.outer.h * mmPerPx }, bleedDu: 0, slugDu: 0 } as ExportGeometry;
-    const live = await screenshotPrintPage(
-      {
-        design,
-        geometry,
-        cropMarks: false,
-        distDir: deps.printPageDist,
-        live: {
-          style: buildStyle(design, {
-            tilesUrl: `${PRINT_ORIGIN}${PROXY_PREFIX}basemap/{z}/{x}/{y}`,
-            glyphsUrl: `${PRINT_ORIGIN}${PROXY_PREFIX}font/{fontstack}/{range}`,
-          }),
-          pixelRatio: 1,
-          proxyTarget: deps.tilesUrl,
+      // A page whose CSS width equals the poster width in design units → 1 du = 1 CSS px.
+      const mmPerPx = 25.4 / 96;
+      const geometry = { pageMm: { w: layout.outer.w * mmPerPx, h: layout.outer.h * mmPerPx }, bleedDu: 0, slugDu: 0 } as ExportGeometry;
+      const live = await screenshotPrintPage(
+        {
+          design,
+          geometry,
+          cropMarks: false,
+          distDir: deps.printPageDist,
+          live: {
+            style: buildStyle(design, {
+              tilesUrl: `${PRINT_ORIGIN}${PROXY_PREFIX}basemap/{z}/{x}/{y}`,
+              glyphsUrl: `${PRINT_ORIGIN}${PROXY_PREFIX}font/{fontstack}/{range}`,
+            }),
+            pixelRatio: 1,
+            proxyTarget: deps.tilesUrl,
+          },
+          onConsole: process.env.PARITY_DEBUG ? (m) => console.log(`  [${themeId} page] ${m}`) : undefined,
         },
-      },
-      { x: rect.x, y: rect.y, width: w, height: h },
-    );
+        { x: rect.x, y: rect.y, width: w, height: h },
+      );
 
-    const a = PNG.sync.read(nativePng);
-    const b = PNG.sync.read(await sharp(live).resize(w, h).png().toBuffer());
-    const diff = new PNG({ width: w, height: h });
-    const mismatched = pixelmatch(a.data, b.data, diff.data, w, h, { threshold: 0.15, includeAA: false });
-    const ratio = mismatched / (w * h);
+      const a = PNG.sync.read(nativePng);
+      b = PNG.sync.read(await sharp(live).resize(w, h).png().toBuffer());
+      diff = new PNG({ width: w, height: h });
+      const mismatched = pixelmatch(a.data, b.data, diff.data, w, h, { threshold: 0.15, includeAA: false });
+      ratio = mismatched / (w * h);
+    } while (ratio > threshold && attempt < 2);
     await writeFile(path.join(outDir, `${themeId}-native.png`), nativePng);
     await writeFile(path.join(outDir, `${themeId}-live.png`), PNG.sync.write(b));
     await writeFile(path.join(outDir, `${themeId}-diff.png`), PNG.sync.write(diff));
     const ok = ratio <= threshold;
     failed ||= !ok;
-    console.log(`${ok ? 'PASS' : 'FAIL'} ${themeId.padEnd(12)} mismatch ${(ratio * 100).toFixed(2)}%`);
+    const line = `${ok ? 'PASS' : 'FAIL'} ${themeId.padEnd(12)} mismatch ${(ratio * 100).toFixed(2)}%${attempt > 1 ? ' (2nd attempt)' : ''}`;
+    console.log(line);
+    // On GitHub Actions, surface each result as an annotation so it is visible on the run page.
+    if (process.env.GITHUB_ACTIONS) console.log(`::${ok ? 'notice' : 'error'} title=parity${withLabels ? ' (labels)' : ''}::${line}`);
   }
 } finally {
   await closeBrowser();

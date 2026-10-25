@@ -119,11 +119,11 @@ const CASES: [ThemeId, MapShape, 'A3' | '50x70'][] = [
   ['classic-ink', 'rect', 'A3'],
   ['minimal', 'rounded', 'A3'],
   ['blush', 'circle', 'A3'],
-  ['sepia', 'arch', '50x70'],
-  ['midnight', 'heart', '50x70'],
-  ['forest', 'rect', '50x70'],
+  ['old-letter', 'arch', '50x70'],
+  ['night-train', 'heart', '50x70'],
+  ['lavender-field', 'rect', '50x70'],
   ['gold-ink', 'circle', 'A3'],
-  ['ocean', 'rounded', '50x70'],
+  ['riviera', 'rounded', '50x70'],
 ];
 
 describe('visual regression (golden renders)', () => {

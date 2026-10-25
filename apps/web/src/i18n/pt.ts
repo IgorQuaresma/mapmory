@@ -98,7 +98,7 @@ export const pt: Resources = {
     romantic: 'Romântico', nostalgic: 'Nostálgico', adventurous: 'Aventureiro', celebratory: 'Festivo', calm: 'Tranquilo', bittersweet: 'Agridoce', neutral: 'Neutro',
   },
   themes: {
-    'classic-ink': 'Tinta Clássica', minimal: 'Minimalista', blush: 'Rosado', sepia: 'Sépia', midnight: 'Meia-noite', forest: 'Floresta', 'gold-ink': 'Tinta Dourada', ocean: 'Oceano',
+    'classic-ink': 'Tinta Clássica', minimal: 'Minimalista', blush: 'Rosado', 'old-letter': 'Carta Antiga', 'night-train': 'Comboio Noturno', 'lavender-field': 'Campo de Lavanda', 'gold-ink': 'Tinta Dourada', riviera: 'Riviera',
   },
   editor: {
     loading: 'A carregar…',
@@ -236,7 +236,7 @@ export const pt: Resources = {
   },
   shapes: { rect: 'Retângulo', rounded: 'Arredondado', circle: 'Círculo', heart: 'Coração', arch: 'Arco' },
   icons: { heart: 'Coração', pin: 'Pino', star: 'Estrela', dot: 'Ponto', ring: 'Anel', flag: 'Bandeira', home: 'Casa' },
-  frames: { none: 'Nenhuma', 'thin-line': 'Fina', 'double-line': 'Dupla', 'thick-line': 'Grossa' },
+  frames: { none: 'Nenhuma', 'thin-line': 'Fina', 'double-line': 'Dupla', 'thick-line': 'Grossa', airmail: 'Correio aéreo' },
   slots: { top: 'Acima do mapa', bottom: 'Abaixo do mapa', 'map-top': 'No mapa (em cima)', 'map-bottom': 'No mapa (em baixo)' },
   corners: { 'bottom-right': 'Em baixo à direita', 'bottom-left': 'Em baixo à esquerda', 'top-right': 'Em cima à direita', 'top-left': 'Em cima à esquerda' },
   languages: { local: 'Nomes locais', en: 'Inglês', de: 'Alemão', fr: 'Francês', es: 'Espanhol', pt: 'Português', it: 'Italiano', nl: 'Neerlandês' },

@@ -67,6 +67,8 @@ const EnvSchema = z.object({
   EXPORT_RETENTION_DAYS: z.coerce.number().int().default(30),
   REVISIONS_KEPT: z.coerce.number().int().default(50),
   ENABLE_MAINTENANCE: bool.default(true),
+  /** Email users when a large or slow export finishes. */
+  ENABLE_EXPORT_EMAILS: bool.default(true),
 
   QUOTA_INTERPRET_PER_DAY: z.coerce.number().int().default(30),
   QUOTA_EXPORTS_PER_HOUR: z.coerce.number().int().default(5),
