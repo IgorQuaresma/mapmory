@@ -56,6 +56,19 @@ export interface Catalog {
 
 export type CreateProjectRequest = z.input<typeof CreateProjectRequestSchema>;
 
+/** An uploaded, server-re-encoded photo (docs/api.md). */
+export interface UploadedPhoto {
+  id: string;
+  width: number;
+  height: number;
+  bytes: number;
+}
+
+/** Image types the API accepts; anything else is rejected with `unsupported_image`. */
+export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
+export const MAX_PHOTOS_PER_PROJECT = 12;
+
 export interface ShareLink {
   url: string;
   expiresAt: string;
@@ -102,6 +115,13 @@ export interface ApiClient {
   revokeShareLink(projectId: string): Promise<void>;
   /** Public: the design behind a preview link; `not_found` when expired or revoked. */
   getShared(token: string): Promise<SharedPoster>;
+  /** Uploads an image as the raw request body; the server strips metadata and re-encodes it. */
+  uploadPhoto(projectId: string, file: File): Promise<UploadedPhoto>;
+  deletePhoto(id: string): Promise<void>;
+  /** `<img src>` for a photo of the signed-in owner's project. */
+  photoUrl(id: string): string;
+  /** `<img src>` for a photo behind a share link. */
+  sharedPhotoUrl(token: string, id: string): string;
   signInMagicLink(email: string, callbackURL: string): Promise<void>;
   signOut(): Promise<void>;
 }

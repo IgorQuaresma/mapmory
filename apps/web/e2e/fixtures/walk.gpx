@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="mapmory-e2e" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Evening walk</name>
+    <trkseg>
+      <trkpt lat="48.85834" lon="2.33758"><ele>35</ele></trkpt>
+      <trkpt lat="48.85792" lon="2.33960"></trkpt>
+      <trkpt lat="48.85735" lon="2.34150"></trkpt>
+      <trkpt lat="48.85660" lon="2.34330"></trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="48.85600" lon="2.34480"></trkpt>
+      <trkpt lat="48.85480" lon="2.34640"></trkpt>
+      <trkpt lat="48.85330" lon="2.34900"></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

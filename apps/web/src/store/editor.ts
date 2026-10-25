@@ -2,12 +2,15 @@ import { DesignSchema, type Design } from '@mapmory/design-schema';
 import { temporal, type TemporalState } from 'zundo';
 import { create, useStore } from 'zustand';
 
-export type PanelId = 'style' | 'area' | 'markers' | 'text' | 'layout';
+export type PanelId = 'style' | 'area' | 'markers' | 'routes' | 'photos' | 'text' | 'layout';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
 
 export interface UiState {
   panel: PanelId;
   selectedMarkerId: string | null;
+  selectedPhotoId: string | null;
+  /** A freely placed text selected on the poster (opens its card in the Text panel). */
+  selectedTextId: string | null;
   showGuides: boolean;
   mapLocked: boolean;
   /** Preview zoom relative to "fit" (1 = fit to available space). */
@@ -46,6 +49,8 @@ export const HISTORY_LIMIT = 100;
 const initialUi: UiState = {
   panel: 'style',
   selectedMarkerId: null,
+  selectedPhotoId: null,
+  selectedTextId: null,
   showGuides: false,
   mapLocked: false,
   previewZoom: 1,

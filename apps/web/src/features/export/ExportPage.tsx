@@ -170,7 +170,7 @@ export default function ExportPage() {
                     <span>
                       <span className="sr-only">{t(`export.severity.${i.severity}`)}: </span>
                       {t(`preflight.${i.code}`, { dpi: options.dpi, recommended: recommendedDpi })}
-                      {i.target && <span className="text-ink-soft"> ({t(i.code === 'marker-outside-map' ? 'targets.marker' : 'targets.text', { id: i.target })})</span>}
+                      {i.target && <span className="text-ink-soft"> ({t(i.code === 'marker-outside-map' ? 'targets.marker' : i.code === 'photo-low-resolution' ? 'targets.photo' : 'targets.text', { id: i.target })})</span>}
                     </span>
                   </li>
                 ))}

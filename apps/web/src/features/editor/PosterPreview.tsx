@@ -9,8 +9,9 @@ import { IconButton, cx } from '../../components/ui';
 import { useElementSize } from '../../lib/hooks';
 import type { MapLibreMap } from '../../lib/maplibre';
 import { useCatalog } from '../../lib/queries';
+import { api } from '../../api';
 import { useDesign, useEditor } from '../../store/editor';
-import { gesture, setView, updateMarker } from './actions';
+import { clampToPage, gesture, setView, updateMarker, updatePhoto, updateText } from './actions';
 
 const PREVIEW_PADDING = 32;
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.5, 2, 3];
@@ -33,6 +34,8 @@ export function PosterPreview() {
   const scale = Math.max(0.05, fit * ui.previewZoom);
 
   const onMarkerPointerDown = useMarkerDrag(posterRef, layout, scale);
+  const onPhotoPointerDown = useElementDrag(scale, 'photo');
+  const onTextPointerDown = useElementDrag(scale, 'text');
 
   const zoomBy = (dir: 1 | -1) => {
     const i = ZOOM_STEPS.findIndex((z) => z >= ui.previewZoom - 1e-6);
@@ -62,6 +65,11 @@ export function PosterPreview() {
                   renderMap={(rect) => <EditorMap rect={rect} scale={scale} />}
                   onMarkerPointerDown={onMarkerPointerDown}
                   selectedMarkerId={ui.panel === 'markers' ? ui.selectedMarkerId : null}
+                  photoSrc={(id) => api.photoUrl(id)}
+                  onPhotoPointerDown={onPhotoPointerDown}
+                  onTextPointerDown={onTextPointerDown}
+                  selectedPhotoId={ui.panel === 'photos' ? ui.selectedPhotoId : null}
+                  selectedTextId={ui.panel === 'text' ? ui.selectedTextId : null}
                 />
                 {ui.showGuides && <Guides design={design} layout={layout} />}
               </div>
@@ -104,11 +112,12 @@ function EditorMap({ rect, scale }: { rect: Rect; scale: number }) {
   const locked = useEditor((s) => s.ui.mapLocked);
   const tiles = useCatalog().data!.tiles;
   const { themeId, palette, layers, roadWeight, labelLanguage } = design.map;
-  // buildStyle only depends on the map's style fields; keep the style stable during pans.
+  const routes = design.routes;
+  // buildStyle only depends on the map's style fields and routes; keep the style stable during pans.
   const styleSpec = useMemo(
     () => buildStyle(design, tiles),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tiles, themeId, palette, layers, roadWeight, labelLanguage],
+    [tiles, themeId, palette, layers, roadWeight, labelLanguage, routes],
   );
   const applied = useRef<Design>(design);
 
@@ -189,6 +198,49 @@ function useMarkerDrag(posterRef: RefObject<HTMLDivElement | null>, layout: Post
       window.addEventListener('pointercancel', up);
     },
     [posterRef, setUi],
+  );
+}
+
+/**
+ * Pointer-drag for photos and free texts: the pointer delta divided by the preview scale moves the
+ * element's centre in design units, clamped to the page. One drag is one undo step.
+ */
+function useElementDrag(scale: number, kind: 'photo' | 'text') {
+  const setUi = useEditor((s) => s.setUi);
+  const latest = useRef(scale);
+  latest.current = scale;
+  return useCallback(
+    (id: string, e: ReactPointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const d = useEditor.getState().design!;
+      const start = kind === 'photo' ? d.photos.find((p) => p.id === id)?.center : d.texts.find((x) => x.id === id)?.freePosition;
+      setUi(kind === 'photo' ? { selectedPhotoId: id, panel: 'photos' } : { selectedTextId: id, panel: 'text' });
+      if (!start) return;
+      const [sx, sy] = [e.clientX, e.clientY];
+      let started = false;
+      const move = (ev: PointerEvent) => {
+        if (!started) {
+          started = true;
+          gesture.start();
+        }
+        const s = latest.current;
+        const next = clampToPage(useEditor.getState().design!, [start[0] + (ev.clientX - sx) / s, start[1] + (ev.clientY - sy) / s]);
+        if (kind === 'photo') updatePhoto(id, { center: next });
+        else updateText(id, { freePosition: next });
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        if (started) gesture.end();
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+    },
+    [kind, setUi],
   );
 }
 

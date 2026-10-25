@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const MAILPIT = process.env.MAILPIT_URL ?? 'http://localhost:8025';
 
@@ -17,7 +17,24 @@ async function magicLinkFor(email: string): Promise<string> {
   throw new Error(`No sign-in email for ${email}`);
 }
 
-test('real stack: memory → place → editor → magic-link sign-in → rendered PDF download', async ({ page }) => {
+/** A 1600×1200 JPEG drawn in the browser, so no binary fixture is needed. */
+async function jpeg(page: Page): Promise<Buffer> {
+  const b64 = await page.evaluate(async () => {
+    const c = document.createElement('canvas');
+    c.width = 1600;
+    c.height = 1200;
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#3b7fc4';
+    g.fillRect(0, 0, 1600, 1200);
+    const blob = await new Promise<Blob>((r) => c.toBlob((b) => r(b!), 'image/jpeg', 0.9));
+    let s = '';
+    for (const b of new Uint8Array(await blob.arrayBuffer())) s += String.fromCharCode(b);
+    return btoa(s);
+  });
+  return Buffer.from(b64, 'base64');
+}
+
+test('real stack: memory → place → editor → photo upload → magic-link sign-in → rendered PDF download', async ({ page }) => {
   const email = `e2e-${Date.now()}@example.com`;
 
   // Step 1, with the real ALTCHA proof-of-work.
@@ -39,6 +56,14 @@ test('real stack: memory → place → editor → magic-link sign-in → rendere
   await expect(page).toHaveURL(/\/design\/[0-9a-f-]+$/);
   await page.waitForSelector('.maplibregl-canvas');
   await page.getByTestId('theme-riviera').click();
+  await expect(page.getByTestId('save-status')).toHaveAttribute('data-status', 'saved', { timeout: 20_000 });
+
+  // A photo goes through the real upload (re-encoded by the API, stored in S3) and into the print file.
+  await page.getByRole('tab', { name: 'Photos' }).click();
+  const uploaded = page.waitForResponse((r) => /\/photos$/.test(r.url()) && r.request().method() === 'POST');
+  await page.getByTestId('photo-file').setInputFiles({ name: 'beach.jpg', mimeType: 'image/jpeg', buffer: await jpeg(page) });
+  expect((await uploaded).status()).toBe(201);
+  await expect(page.locator('[data-testid^="photo-p"] img').first()).toHaveJSProperty('naturalWidth', 1600);
   await expect(page.getByTestId('save-status')).toHaveAttribute('data-status', 'saved', { timeout: 20_000 });
 
   // Export: sign in with the magic link from Mailpit.
@@ -63,4 +88,6 @@ test('real stack: memory → place → editor → magic-link sign-in → rendere
   const body = await file.body();
   expect(body.subarray(0, 5).toString()).toBe('%PDF-');
   expect(body.length).toBeGreaterThan(100_000);
+  // The map is embedded as PNG; a JPEG stream can only be the photo.
+  expect(body.toString('latin1')).toContain('/DCTDecode');
 });

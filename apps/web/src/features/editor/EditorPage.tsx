@@ -15,6 +15,8 @@ import { replaceDesign } from './actions';
 import { AreaPanel } from './panels/AreaPanel';
 import { LayoutPanel } from './panels/LayoutPanel';
 import { MarkersPanel } from './panels/MarkersPanel';
+import { PhotosPanel } from './panels/PhotosPanel';
+import { RoutesPanel } from './panels/RoutesPanel';
 import { StylePanel } from './panels/StylePanel';
 import { TextPanel } from './panels/TextPanel';
 import { ShareDialog } from '../share/ShareDialog';
@@ -24,6 +26,8 @@ const PANELS: { id: PanelId; render: () => ReactNode }[] = [
   { id: 'style', render: () => <StylePanel /> },
   { id: 'area', render: () => <AreaPanel /> },
   { id: 'markers', render: () => <MarkersPanel /> },
+  { id: 'routes', render: () => <RoutesPanel /> },
+  { id: 'photos', render: () => <PhotosPanel /> },
   { id: 'text', render: () => <TextPanel /> },
   { id: 'layout', render: () => <LayoutPanel /> },
 ];
@@ -98,12 +102,12 @@ function Editor({ projectId, draft, onDraftHandled }: { projectId: string; draft
 
   const tabs = (
     <Tabs.Root value={panel} onValueChange={(v) => setUi({ panel: v as PanelId, mobilePanelOpen: true })} className="flex min-h-0 flex-1 flex-col">
-      <Tabs.List aria-label={t('editor.panels.label')} className="flex shrink-0 gap-1 overflow-x-auto border-b border-line px-3 pt-2">
+      <Tabs.List aria-label={t('editor.panels.label')} className="flex shrink-0 gap-0.5 overflow-x-auto border-b border-line px-2 pt-2">
         {PANELS.map((p) => (
           <Tabs.Trigger
             key={p.id}
             value={p.id}
-            className="rounded-t-lg border-b-2 border-transparent px-3 py-2 text-sm font-medium text-ink-soft hover:text-ink data-[state=active]:border-accent data-[state=active]:text-ink"
+            className="rounded-t-lg border-b-2 border-transparent px-2.5 py-2 text-sm font-medium text-ink-soft hover:text-ink data-[state=active]:border-accent data-[state=active]:text-ink"
           >
             {t(`editor.panels.${p.id}`)}
           </Tabs.Trigger>

@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { CORNERS, EXPORT_FORMATS, EXPORT_STATUSES, FRAME_STYLES, LABEL_LANGUAGES, MAP_SHAPES, MARKER_ICONS, MOODS, TEXT_ROLES, TEXT_SLOTS, THEME_IDS, LAYER_KEYS, PALETTE_KEYS } from '@mapmory/design-schema';
+import { CORNERS, EXPORT_FORMATS, PHOTO_FRAMES, ROUTE_STYLES, EXPORT_STATUSES, FRAME_STYLES, LABEL_LANGUAGES, MAP_SHAPES, MARKER_ICONS, MOODS, TEXT_ROLES, TEXT_SLOTS, THEME_IDS, LAYER_KEYS, PALETTE_KEYS } from '@mapmory/design-schema';
 import { describe, expect, it } from 'vitest';
 import { de } from './de';
 import { en } from './en';
@@ -56,8 +56,11 @@ describe('i18n resources', () => {
       ['themes', THEME_IDS], ['moods', MOODS], ['shapes', MAP_SHAPES], ['icons', MARKER_ICONS], ['frames', FRAME_STYLES],
       ['slots', TEXT_SLOTS], ['corners', CORNERS], ['languages', LABEL_LANGUAGES], ['export.status', EXPORT_STATUSES],
       ['editor.text.roles', TEXT_ROLES], ['editor.style.layer', LAYER_KEYS], ['editor.style.palette', PALETTE_KEYS],
+      ['editor.routes.styles', ROUTE_STYLES], ['editor.photos.frames', PHOTO_FRAMES],
+      ['editor.routes.errors', ['too_large', 'unreadable', 'no_lines']],
+      ['editor.photos.errors', ['unsupported_image', 'invalid_image', 'photo_limit', 'payload_too_large', 'generic']],
       ['weights', [100, 200, 300, 400, 500, 600, 700, 800, 900]],
-      ['preflight', ['text-outside-safe-zone', 'text-too-wide', 'low-contrast', 'text-too-small', 'low-dpi', 'exceeds-max-size', 'empty-title', 'marker-outside-map']],
+      ['preflight', ['text-outside-safe-zone', 'text-too-wide', 'low-contrast', 'text-too-small', 'low-dpi', 'exceeds-max-size', 'empty-title', 'marker-outside-map', 'photo-low-resolution']],
     ];
     const missing = families.flatMap(([f, values]) => values.map((v) => `${f}.${v}`)).filter((k) => !enKeys.has(k));
     expect(missing).toEqual([]);

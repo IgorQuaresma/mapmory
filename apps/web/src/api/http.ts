@@ -11,6 +11,7 @@ import type {
   ShareLink,
   SharedPoster,
   ShareStatus,
+  UploadedPhoto,
 } from './types';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -38,10 +39,17 @@ export class HttpApi implements ApiClient {
   private async request<T>(
     method: Method,
     path: string,
-    { body, headers = {}, raw = false, retried = false }: { body?: unknown; headers?: Record<string, string>; raw?: boolean; retried?: boolean } = {},
+    {
+      body,
+      blob,
+      headers = {},
+      raw = false,
+      retried = false,
+    }: { body?: unknown; blob?: Blob; headers?: Record<string, string>; raw?: boolean; retried?: boolean } = {},
   ): Promise<T> {
     const h: Record<string, string> = { Accept: 'application/json', ...headers };
     if (body !== undefined) h['Content-Type'] = 'application/json';
+    if (blob) h['Content-Type'] = blob.type || 'application/octet-stream';
     if (MUTATING.has(method) && path.startsWith('/api/v1/')) {
       h['x-csrf-token'] = await this.ensureCsrf();
     }
@@ -50,7 +58,7 @@ export class HttpApi implements ApiClient {
       res = await this.fetchImpl(`${this.base}${path}`, {
         method,
         headers: h,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body: blob ?? (body === undefined ? undefined : JSON.stringify(body)),
         credentials: 'same-origin',
       });
     } catch {
@@ -60,7 +68,7 @@ export class HttpApi implements ApiClient {
       const problem = await parseProblem(res);
       if (problem.code === 'csrf_invalid' && !retried) {
         this.csrfToken = null;
-        return this.request<T>(method, path, { body, headers, raw, retried: true });
+        return this.request<T>(method, path, { body, blob, headers, raw, retried: true });
       }
       throw new ApiError(problem);
     }
@@ -165,6 +173,22 @@ export class HttpApi implements ApiClient {
   async getShared(token: string) {
     const r = await this.request<SharedPoster>('GET', `/api/v1/shared/${encodeURIComponent(token)}`);
     return { ...r, design: migrateDesign(r.design) };
+  }
+
+  async uploadPhoto(projectId: string, file: File) {
+    return (await this.request<{ photo: UploadedPhoto }>('POST', `/api/v1/projects/${encodeURIComponent(projectId)}/photos`, { blob: file })).photo;
+  }
+
+  deletePhoto(id: string) {
+    return this.request<void>('DELETE', `/api/v1/photos/${encodeURIComponent(id)}`);
+  }
+
+  photoUrl(id: string) {
+    return `${this.base}/api/v1/photos/${encodeURIComponent(id)}`;
+  }
+
+  sharedPhotoUrl(token: string, id: string) {
+    return `${this.base}/api/v1/shared/${encodeURIComponent(token)}/photos/${encodeURIComponent(id)}`;
   }
 
   async signInMagicLink(email: string, callbackURL: string) {
