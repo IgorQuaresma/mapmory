@@ -8,7 +8,7 @@ import { PNG } from 'pngjs';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { migrateDesign, type Design, type ExportOptions, type MapShape, type ThemeId } from '@mapmory/design-schema';
-import { applyTheme, changePaper, exportGeometry } from '@mapmory/poster-core';
+import { applyTheme, changePaper, detectRace, exportGeometry, makeRacePoster } from '@mapmory/poster-core';
 import { loadConfigForCli } from '../src/cli-config';
 import { closeBrowser } from '../src/compose';
 import { runExportPipeline } from '../src/pipeline';
@@ -56,6 +56,44 @@ async function featurePoster(): Promise<{ design: Design; photos: Map<string, Bu
   };
   return { design, photos: new Map([[photoId, photo]]) };
 }
+
+describe('race posters in exports', () => {
+  it('renders one map per leg, with the leg route and the stats as vector text', async ({ skip }) => {
+    if (!tilesUp) skip();
+    const race = detectRace('Ironman Paris: swim 1:05:12, bike 5:40:12, run 4:40:03, finished in 11:42:07')!;
+    const poster = makeRacePoster(base, race, 'en');
+    const route = Array.from({ length: 80 }, (_, i) => [Number((2.35 + 0.04 * Math.cos(i / 12.7)).toFixed(5)), Number((48.86 + 0.025 * Math.sin(i / 12.7)).toFixed(5))] as [number, number]);
+    const design: Design = {
+      ...poster,
+      routes: [{ id: 'bike', name: 'Bike', points: route, color: '#F0592A', widthDu: 5, style: 'solid', endpoints: true }],
+      sport: { ...poster.sport!, legs: poster.sport!.legs.map((l) => (l.discipline === 'bike' ? { ...l, routeId: 'bike', center: [2.35, 48.86], zoom: 11 } : l)) },
+    };
+    const { body } = await runExportPipeline(design, { ...pdfOpts, cropMarks: false, bleedMm: 0 }, deps);
+    const file = await tmpFile('race.pdf', body);
+    const images = (await run('pdfimages', ['-list', file])).stdout.split('\n').slice(2).filter(Boolean);
+    expect(images).toHaveLength(3);
+    // A3 at 150 DPI: each of the three columns is roughly a third of the page wide.
+    for (const line of images) expect(Number(line.trim().split(/\s+/)[3])).toBeLessThan(600);
+    const text = (await run('pdftotext', ['-raw', file, '-'])).stdout;
+    for (const s of ['SWIM', 'BIKE', 'RUN', '3.8 km · 1:05:12', '180 km · 5:40:12', '31.7 km/h']) expect(text).toContain(s);
+
+    // The bike route's orange is drawn in the bike panel only.
+    const png = PNG.sync.read((await runExportPipeline(design, { ...pdfOpts, format: 'png', cropMarks: false, bleedMm: 0 }, deps)).body);
+    const orangeIn = (x0: number, x1: number) => {
+      let n = 0;
+      for (let y = 0; y < png.height; y++) {
+        for (let x = Math.round(x0 * png.width); x < Math.round(x1 * png.width); x++) {
+          const i = (y * png.width + x) * 4;
+          if (Math.abs(png.data[i]! - 0xf0) < 24 && Math.abs(png.data[i + 1]! - 0x59) < 30 && Math.abs(png.data[i + 2]! - 0x2a) < 30) n++;
+        }
+      }
+      return n;
+    };
+    expect(orangeIn(0.36, 0.64)).toBeGreaterThan(200);
+    expect(orangeIn(0.06, 0.34)).toBeLessThan(20);
+    expect(orangeIn(0.66, 0.94)).toBeLessThan(20);
+  });
+});
 
 describe('routes, photos and free text in exports', () => {
   it('embeds the photo as a second image and draws the route into the map raster', async ({ skip }) => {

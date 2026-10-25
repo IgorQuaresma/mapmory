@@ -1,7 +1,7 @@
 import '@mapmory/poster-react/fonts.css';
 import { computeLayout } from '@mapmory/poster-core';
 import { Poster, loadDesignFonts } from '@mapmory/poster-react';
-import { StrictMode, useEffect, useRef, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { PrintPayload } from './contract';
 
@@ -11,7 +11,10 @@ function PrintApp({ payload }: { payload: PrintPayload }) {
   const layout = computeLayout(payload.design, { bleedDu: payload.bleedDu, slugDu: payload.slugDu });
   const pageWidthPx = payload.pageMm.w * CSS_PX_PER_MM;
   const scale = pageWidthPx / layout.outer.w;
-  const [mapReady, setMapReady] = useState(false);
+  // Every map panel (one per leg on a race poster) must be decoded before the page is ready.
+  const [loaded, setLoaded] = useState<ReadonlySet<number>>(new Set());
+  const mapReady = loaded.size === layout.panels.length;
+  const markLoaded = useCallback((i: number) => setLoaded((s) => new Set(s).add(i)), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,15 +38,15 @@ function PrintApp({ payload }: { payload: PrintPayload }) {
           layout={layout}
           showCropMarks={payload.cropMarks}
           photoSrc={(photoId) => `/__photo/${encodeURIComponent(photoId)}`}
-          renderMap={(rect) =>
+          renderMap={(rect, panel) =>
             payload.mode === 'live' ? (
-              <LiveMap payload={payload} width={rect.w} height={rect.h} onReady={() => setMapReady(true)} />
+              <LiveMap payload={payload} panel={panel.index} width={rect.w} height={rect.h} onReady={markLoaded} />
             ) : (
               <img
-                src={payload.mapImageUrl}
+                src={payload.mapImageUrls?.[panel.index]}
                 alt=""
                 style={{ display: 'block', width: rect.w, height: rect.h }}
-                onLoad={(e) => void e.currentTarget.decode().then(() => setMapReady(true))}
+                onLoad={(e) => void e.currentTarget.decode().then(() => markLoaded(panel.index))}
                 onError={() => (window.__MAPMORY_ERROR__ = 'Map image failed to load')}
               />
             )
@@ -55,27 +58,39 @@ function PrintApp({ payload }: { payload: PrintPayload }) {
 }
 
 /** Parity-test mode: the same style drawn by MapLibre GL JS, to compare with the native raster. */
-function LiveMap({ payload, width, height, onReady }: { payload: PrintPayload; width: number; height: number; onReady: () => void }) {
+function LiveMap({
+  payload,
+  panel,
+  width,
+  height,
+  onReady,
+}: {
+  payload: PrintPayload;
+  panel: number;
+  width: number;
+  height: number;
+  onReady: (panel: number) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let map: { remove(): void } | undefined;
     void Promise.all([import('maplibre-gl'), import('maplibre-gl/dist/maplibre-gl-worker.mjs?url')]).then(([{ Map, setWorkerUrl }, worker]) => {
       setWorkerUrl(worker.default);
       if (!ref.current || !payload.style) return;
-      const layout = computeLayout(payload.design, { bleedDu: payload.bleedDu, slugDu: payload.slugDu });
+      const { viewport } = computeLayout(payload.design, { bleedDu: payload.bleedDu, slugDu: payload.slugDu }).panels[panel]!;
       const m = new Map({
         container: ref.current,
         style: payload.style,
-        center: layout.map.viewport.center,
-        zoom: layout.map.viewport.zoom,
-        bearing: layout.map.viewport.bearing,
+        center: viewport.center,
+        zoom: viewport.zoom,
+        bearing: viewport.bearing,
         interactive: false,
         attributionControl: false,
         pixelRatio: payload.pixelRatio ?? 1,
         canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },
         fadeDuration: 0,
       });
-      m.once('idle', onReady);
+      m.once('idle', () => onReady(panel));
       m.on('error', (e) => {
         const message = String(e.error?.message ?? e);
         console.error(`map error: ${message}`);
@@ -84,7 +99,7 @@ function LiveMap({ payload, width, height, onReady }: { payload: PrintPayload; w
       map = m;
     });
     return () => map?.remove();
-  }, [payload, onReady]);
+  }, [payload, panel, onReady]);
   return <div ref={ref} style={{ width: Math.round(width), height: Math.round(height) }} />;
 }
 

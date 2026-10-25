@@ -7,7 +7,7 @@ import type { ExportGeometry } from '@mapmory/poster-core';
 
 /** A fixed, non-routable origin for the print page; every other request is refused (plan §8.1). */
 export const PRINT_ORIGIN = 'https://print.mapmory.internal';
-const MAP_IMAGE_PATH = '/__map.png';
+const MAP_PREFIX = '/__map/';
 export const PROXY_PREFIX = '/__proxy/';
 const PHOTO_PREFIX = '/__photo/';
 
@@ -50,8 +50,8 @@ export interface ComposeInput {
   geometry: ExportGeometry;
   cropMarks: boolean;
   distDir: string;
-  /** print mode */
-  mapPng?: Buffer;
+  /** print mode: one map raster per map panel (one on a single-map poster, one per leg on a race poster). */
+  mapPngs?: Buffer[];
   /** Re-encoded JPEGs of the design's photos, by photo id (served at /__photo/<id>). */
   photos?: Map<string, Buffer>;
   /**
@@ -100,8 +100,9 @@ async function openPrintPage(input: ComposeInput) {
         const photo = input.photos?.get(decodeURIComponent(url.pathname.slice(PHOTO_PREFIX.length)));
         return photo ? route.fulfill({ status: 200, contentType: 'image/jpeg', body: photo }) : route.fulfill({ status: 404, body: '' });
       }
-      if (url.pathname === MAP_IMAGE_PATH && input.mapPng) {
-        return route.fulfill({ status: 200, contentType: 'image/png', body: input.mapPng });
+      const mapIndex = /^\/__map\/(\d+)\.png$/.exec(url.pathname)?.[1];
+      if (mapIndex !== undefined && input.mapPngs?.[Number(mapIndex)]) {
+        return route.fulfill({ status: 200, contentType: 'image/png', body: input.mapPngs[Number(mapIndex)] });
       }
       const rel = url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname.slice(1));
       const file = path.resolve(distRoot, rel);
@@ -123,7 +124,7 @@ async function openPrintPage(input: ComposeInput) {
     slugDu: input.geometry.slugDu,
     pageMm: input.geometry.pageMm,
     cropMarks: input.cropMarks,
-    mapImageUrl: input.mapPng ? MAP_IMAGE_PATH : undefined,
+    mapImageUrls: input.mapPngs?.map((_, i) => `${MAP_PREFIX}${i}.png`),
     style: input.live?.style,
     pixelRatio: input.live?.pixelRatio,
   };

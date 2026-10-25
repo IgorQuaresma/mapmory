@@ -131,6 +131,21 @@ describe('projects, designs and exports', () => {
     expect(owner.cookie('mm_anon')).toBeTruthy();
   });
 
+  it('creates a race poster from a draft with a race, and rejects malformed races', async () => {
+    const race = { event: 'triathlon', name: 'Ironman Frankfurt', legs: [{ discipline: 'swim', distanceKm: 3.8, timeS: 3912 }, { discipline: 'bike', distanceKm: 180, timeS: null }, { discipline: 'run', distanceKm: 42.2, timeS: null }], finishTimeS: 42127 };
+    const athlete = new Client(h.app);
+    await athlete.init();
+    const res = await athlete.request('POST', '/api/v1/projects', { draft: { ...draft, title: null, sport: race } });
+    expect(res.statusCode).toBe(201);
+    const { design: d } = res.json();
+    expect(d.schemaVersion).toBe(4);
+    expect(d.sport.legs.map((l: { discipline: string }) => l.discipline)).toEqual(['swim', 'bike', 'run']);
+    expect(d.texts.find((t: { role: string }) => t.role === 'title').content).toBe('Ironman Frankfurt');
+    const four = { ...race, legs: [...race.legs, race.legs[0]] };
+    expect((await athlete.request('POST', '/api/v1/projects', { draft: { ...draft, sport: four } })).statusCode).toBe(400);
+    expect((await athlete.request('POST', '/api/v1/projects', { draft: { ...draft, sport: { ...race, event: 'curling' } } })).statusCode).toBe(400);
+  });
+
   it('hides projects from other visitors (IDOR)', async () => {
     const other = new Client(h.app);
     await other.init();

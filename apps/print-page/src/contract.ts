@@ -9,8 +9,11 @@ export interface PrintPayload {
   slugDu: number;
   pageMm: { w: number; h: number };
   cropMarks: boolean;
-  /** print mode: URL of the pre-rendered map raster (served by the renderer's request interception). */
-  mapImageUrl?: string;
+  /**
+   * print mode: URLs of the pre-rendered map rasters, one per map panel (served by the renderer's request
+   * interception).
+   */
+  mapImageUrls?: string[];
   /** live mode (parity tests): style + pixel ratio for MapLibre GL JS. */
   style?: StyleSpecification;
   pixelRatio?: number;

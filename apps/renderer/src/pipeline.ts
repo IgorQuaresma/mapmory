@@ -54,20 +54,25 @@ export async function runExportPipeline(
   if (geometry.exceedsLimit) throw new ExportTooLargeError('Requested output exceeds the maximum render size');
   const layout = computeLayout(design, { bleedDu: geometry.bleedDu, slugDu: geometry.slugDu });
 
-  // 3. Map raster with MapLibre Native; endpoints come only from server config.
+  // 3. Map rasters with MapLibre Native, one per panel (race posters have one per leg); endpoints come only from
+  //    server config.
   await onProgress('rendering', 10);
   let t0 = performance.now();
-  const style = buildStyle(design, {
+  const endpoints = {
     tilesUrl: `${deps.tilesUrl}/basemap/{z}/{x}/{y}`,
     glyphsUrl: `${deps.tilesUrl}/font/{fontstack}/{range}`,
-  });
-  const raster = await renderMapRaster({
-    style,
-    viewport: layout.map.viewport,
-    pixelRatio: geometry.pxPerDu,
-    allowedOrigins: [new URL(deps.tilesUrl).origin],
-  });
-  const mapPng = await encodeMapPng(raster);
+  };
+  const mapPngs: Buffer[] = [];
+  for (const panel of layout.panels) {
+    const raster = await renderMapRaster({
+      style: buildStyle(design, endpoints, panel.leg?.id ?? null),
+      viewport: panel.viewport,
+      pixelRatio: geometry.pxPerDu,
+      allowedOrigins: [new URL(deps.tilesUrl).origin],
+    });
+    mapPngs.push(await encodeMapPng(raster));
+    await onProgress('rendering', 10 + Math.round((35 * mapPngs.length) / layout.panels.length));
+  }
   mark('mapRaster', t0);
 
   // 4–5. Compose the PDF in Chromium; the shape is a vector clip path applied by the print page.
@@ -75,7 +80,7 @@ export async function runExportPipeline(
   t0 = performance.now();
   const title = design.texts.find((t) => t.role === 'title')?.content ?? '';
   let pdf = await finalizePdf(
-    await composePdf({ design, geometry, cropMarks: options.cropMarks, distDir: deps.printPageDist, mapPng, photos }),
+    await composePdf({ design, geometry, cropMarks: options.cropMarks, distDir: deps.printPageDist, mapPngs, photos }),
     geometry,
     title,
   );
