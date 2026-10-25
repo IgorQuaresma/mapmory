@@ -37,7 +37,9 @@ import type {
   ShareLink,
   SharedPoster,
   ShareStatus,
+  UploadedPhoto,
 } from './types';
+import { MAX_PHOTO_BYTES, MAX_PHOTOS_PER_PROJECT, PHOTO_TYPES } from './types';
 
 interface MockProject {
   summary: ProjectSummary;
@@ -87,6 +89,8 @@ function load(): MockDb {
 export class MockApi implements ApiClient {
   private db: MockDb = load();
   private blobUrls = new Map<string, string>();
+  /** Photos live in memory only (object URLs); a reload of the mock loses them. */
+  private photos = new Map<string, UploadedPhoto & { projectId: string; url: string }>();
 
   private persist() {
     try {
@@ -361,6 +365,43 @@ export class MockApi implements ApiClient {
     return { title: p.summary.title, design: p.revisions.at(-1)!, expiresAt: sh.expiresAt };
   }
 
+  async uploadPhoto(projectId: string, file: File): Promise<UploadedPhoto> {
+    await delay(300);
+    this.project(projectId);
+    if (!(PHOTO_TYPES as readonly string[]).includes(file.type)) {
+      throw new ApiError({ status: 415, code: 'unsupported_image', title: 'Unsupported image type' });
+    }
+    if (file.size > MAX_PHOTO_BYTES) throw new ApiError({ status: 413, code: 'payload_too_large', title: 'Too large' });
+    if ([...this.photos.values()].filter((p) => p.projectId === projectId).length >= MAX_PHOTOS_PER_PROJECT) {
+      throw new ApiError({ status: 409, code: 'photo_limit', title: 'Photo limit reached' });
+    }
+    const url = URL.createObjectURL(file);
+    const size = await imageSize(url).catch(() => null);
+    if (!size) {
+      URL.revokeObjectURL(url);
+      throw new ApiError({ status: 422, code: 'invalid_image', title: 'Unreadable image' });
+    }
+    const photo = { id: crypto.randomUUID(), width: size.width, height: size.height, bytes: file.size };
+    this.photos.set(photo.id, { ...photo, projectId, url });
+    return photo;
+  }
+
+  async deletePhoto(id: string): Promise<void> {
+    await delay(60);
+    const p = this.photos.get(id);
+    if (!p) throw new ApiError({ status: 404, code: 'not_found', title: 'Not found' });
+    URL.revokeObjectURL(p.url);
+    this.photos.delete(id);
+  }
+
+  photoUrl(id: string): string {
+    return this.photos.get(id)?.url ?? '';
+  }
+
+  sharedPhotoUrl(_token: string, id: string): string {
+    return this.photos.get(id)?.url ?? '';
+  }
+
   async signInMagicLink(email: string): Promise<void> {
     await delay(200);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApiError({ status: 400, code: 'validation_failed', title: 'Invalid email' });
@@ -407,4 +448,14 @@ export function mockCatalog(): Catalog {
     tiles: { tilesUrl: `${tiles}/basemap/{z}/{x}/{y}`, glyphsUrl: `${tiles}/font/{fontstack}/{range}`, maxzoom: 15 },
     maxRenderPx: MAX_RENDER_PX,
   };
+}
+
+/** Natural size of an image, like the API reports it after decoding. */
+function imageSize(url: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => (img.naturalWidth > 0 ? resolve({ width: img.naturalWidth, height: img.naturalHeight }) : reject(new Error('empty')));
+    img.onerror = () => reject(new Error('unreadable'));
+    img.src = url;
+  });
 }

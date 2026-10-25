@@ -11,3 +11,4 @@ export * from './draft';
 export * from './paper';
 export * from './preflight';
 export * from './canonical';
+export * from './routes';

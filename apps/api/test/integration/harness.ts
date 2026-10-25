@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
@@ -24,6 +25,7 @@ export interface Harness {
   mails: { to: string; url: string }[];
   enqueued: string[];
   deletedObjects: string[];
+  objects: Map<string, Buffer>;
   stop(): Promise<void>;
 }
 
@@ -55,9 +57,15 @@ export async function startHarness(): Promise<Harness> {
   const mails: Harness['mails'] = [];
   const enqueued: string[] = [];
   const deletedObjects: string[] = [];
+  const objects = new Map<string, Buffer>();
   const store: ObjectStore = {
     signedDownloadUrl: async (key, filename) => `https://s3.test/${key}?filename=${encodeURIComponent(filename)}&sig=x`,
-    deleteObjects: async (keys) => void deletedObjects.push(...keys),
+    putObject: async (key, body) => void objects.set(key, body),
+    getObject: async (key) => (objects.has(key) ? Readable.from([objects.get(key)!]) : null),
+    deleteObjects: async (keys) => {
+      deletedObjects.push(...keys);
+      for (const k of keys) objects.delete(k);
+    },
     ensureBucket: async () => {},
   };
   const auth = createAuth(config, db, { sendMagicLink: async (to, url) => void mails.push({ to, url }), sendExportReady: async () => {} });
@@ -70,7 +78,7 @@ export async function startHarness(): Promise<Harness> {
   });
   await app.ready();
   return {
-    app, db, redis, mails, enqueued, deletedObjects,
+    app, db, redis, mails, enqueued, deletedObjects, objects,
     async stop() {
       await app.close();
       redis.disconnect();
@@ -101,7 +109,7 @@ export class Client {
     return this.cookies.get(name);
   }
 
-  async request(method: string, url: string, body?: unknown, headers: Record<string, string> = {}) {
+  async request(method: string, url: string, body?: unknown, headers: Record<string, string> = {}, raw?: Buffer) {
     const res = await this.app.inject({
       method: method as 'GET',
       url,
@@ -111,7 +119,7 @@ export class Client {
         ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
         ...headers,
       },
-      payload: body === undefined ? undefined : JSON.stringify(body),
+      payload: raw ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
     this.store(res.headers['set-cookie'] as string | string[] | undefined);
     return res;

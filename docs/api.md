@@ -7,7 +7,7 @@ Base path `/api/v1`. JSON everywhere. Request and response types come from `@map
 { "type": "about:blank", "title": "Too Many Requests", "status": 429, "code": "rate_limited", "detail": "…" }
 ```
 
-`code` is stable and meant for the UI: `validation_failed`, `rate_limited`, `quota_exceeded`, `altcha_required`,
+`code` is stable and meant for the UI: `validation_failed`, `unsupported_image`, `invalid_image`, `photo_limit`, `rate_limited`, `quota_exceeded`, `altcha_required`,
 `altcha_invalid`, `auth_required`, `email_unverified`, `not_found`, `revision_conflict`, `export_in_progress`,
 `export_too_large`, `feature_unavailable`, `csrf_invalid`, `interpretation_unavailable`, `internal`.
 
@@ -42,6 +42,10 @@ Base path `/api/v1`. JSON everywhere. Request and response types come from `@map
 | GET | `/projects/:id/share` | — | `{ active: { createdAt, expiresAt } \| null }` |
 | DELETE | `/projects/:id/share` | — | `204`; the link stops working |
 | GET | `/shared/:token` | — | Public: `{ title, design, expiresAt }` for the preview page (`noindex`, `no-store`) · `404` when expired or revoked |
+| POST | `/projects/:id/photos` | Raw image bytes, `Content-Type: image/jpeg \| image/png \| image/webp`, ≤ 15 MB | `201 { photo: { id, width, height, bytes } }`. The server re-encodes the image (JPEG, ≤ 4000 px, sRGB, **all metadata incl. GPS removed**). Errors: `unsupported_image` (415), `invalid_image` (422), `photo_limit` (409, > 12 stored per project), `payload_too_large` (413) |
+| GET | `/photos/:id` | — | `image/jpeg` for the project owner (use directly as `<img src>`); `404` otherwise |
+| DELETE | `/photos/:id` | — | `204`; the image is deleted at once. The editor does not call this: photos the current design no longer uses are deleted by the maintenance job after 24 h, so undo keeps working. |
+| GET | `/shared/:token/photos/:photoId` | — | Public `image/jpeg` for a photo of the shared project (same rules as `/shared/:token`) |
 | GET | `/me/data-export` | — | JSON attachment with the account, projects (current design) and export metadata |
 | DELETE | `/me` | — | `204`; deletes the account and all data |
 

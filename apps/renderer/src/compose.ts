@@ -9,6 +9,7 @@ import type { ExportGeometry } from '@mapmory/poster-core';
 export const PRINT_ORIGIN = 'https://print.mapmory.internal';
 const MAP_IMAGE_PATH = '/__map.png';
 export const PROXY_PREFIX = '/__proxy/';
+const PHOTO_PREFIX = '/__photo/';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -51,6 +52,8 @@ export interface ComposeInput {
   distDir: string;
   /** print mode */
   mapPng?: Buffer;
+  /** Re-encoded JPEGs of the design's photos, by photo id (served at /__photo/<id>). */
+  photos?: Map<string, Buffer>;
   /**
    * live mode (parity tests): MapLibre GL JS draws the map in the page. Tile/glyph URLs in the style must
    * point at `${PRINT_ORIGIN}/__proxy/…`; those requests are proxied to `proxyTarget` only.
@@ -92,6 +95,10 @@ async function openPrintPage(input: ComposeInput) {
           body: Buffer.from(await res.arrayBuffer()),
           contentType: res.headers.get('content-type') ?? 'application/octet-stream',
         });
+      }
+      if (url.pathname.startsWith(PHOTO_PREFIX)) {
+        const photo = input.photos?.get(decodeURIComponent(url.pathname.slice(PHOTO_PREFIX.length)));
+        return photo ? route.fulfill({ status: 200, contentType: 'image/jpeg', body: photo }) : route.fulfill({ status: 404, body: '' });
       }
       if (url.pathname === MAP_IMAGE_PATH && input.mapPng) {
         return route.fulfill({ status: 200, contentType: 'image/png', body: input.mapPng });

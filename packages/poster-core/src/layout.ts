@@ -1,4 +1,4 @@
-import type { Design, DesignText, FontId, MarkerIcon } from '@mapmory/design-schema';
+import type { Design, DesignText, FontId, MarkerIcon, PhotoFrame } from '@mapmory/design-schema';
 import { readableInk } from './color';
 import { offsetCenter, toScreen, type Viewport } from './geo';
 import { canBleed, shapePath } from './shapes';
@@ -28,6 +28,26 @@ export interface LaidOutText {
   y: number;
   /** Available width for the slot (for overflow checks). */
   maxWidth: number;
+  /** Rotation in degrees around the text's anchor point. */
+  rotationDeg: number;
+  /** True for freely placed texts (draggable in the editor). */
+  free: boolean;
+}
+
+export interface LaidOutPhoto {
+  id: string;
+  photoId: string;
+  /** Top-left corner and size of the photo itself, in page design units (before rotation). */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotationDeg: number;
+  frame: PhotoFrame;
+  frameColor: string;
+  /** Frame thickness: border on every side; a polaroid adds `framePadBottom` below. */
+  framePad: number;
+  framePadBottom: number;
 }
 
 export interface LaidOutMarker {
@@ -60,6 +80,7 @@ export interface PosterLayout {
   };
   markers: LaidOutMarker[];
   texts: LaidOutText[];
+  photos: LaidOutPhoto[];
   frame: { rect: Rect; style: Design['page']['frame']['style']; color: string; widthDu: number } | null;
   safeZone: Rect;
   attribution: { text: string; x: number; y: number; anchor: 'start' | 'end'; sizeDu: number; color: string };
@@ -169,6 +190,7 @@ export function computeLayout(design: Design, opts: { bleedDu?: number; slugDu?:
     },
     markers,
     texts,
+    photos: layoutPhotos(design),
     frame,
     safeZone,
     attribution: {
@@ -188,6 +210,19 @@ function layoutTexts(
 ): LaidOutText[] {
   const visible = design.texts.filter((t) => t.visible && t.content.trim().length > 0);
   const out: LaidOutText[] = [];
+  const base = (t: DesignText) => ({
+    id: t.id,
+    text: t.uppercase ? t.content.toLocaleUpperCase() : t.content,
+    fontId: t.fontId,
+    weight: t.weight,
+    italic: t.italic,
+    sizeDu: t.sizeDu,
+    lineHeightDu: t.sizeDu * LINE_HEIGHT,
+    letterSpacingEm: t.letterSpacing,
+    color: t.color,
+    align: t.align,
+    rotationDeg: t.rotationDeg,
+  });
   const bySlot = (slot: DesignText['slot']) =>
     visible.filter((t) => t.slot === slot).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
 
@@ -199,21 +234,7 @@ function layoutTexts(
     items.forEach((t, i) => {
       if (i > 0) y += textGap(t);
       const x = t.align === 'left' ? left : t.align === 'right' ? right : (left + right) / 2;
-      out.push({
-        id: t.id,
-        text: t.uppercase ? t.content.toLocaleUpperCase() : t.content,
-        fontId: t.fontId,
-        weight: t.weight,
-        italic: t.italic,
-        sizeDu: t.sizeDu,
-        lineHeightDu: t.sizeDu * LINE_HEIGHT,
-        letterSpacingEm: t.letterSpacing,
-        color: t.color,
-        align: t.align,
-        x: x + t.offsetDu[0],
-        y: y + t.offsetDu[1],
-        maxWidth: right - left,
-      });
+      out.push({ ...base(t), x: x + t.offsetDu[0], y: y + t.offsetDu[1], maxWidth: right - left, free: false });
       y += t.sizeDu * LINE_HEIGHT;
     });
   };
@@ -237,5 +258,32 @@ function layoutTexts(
   const mapBottomItems = bySlot('map-bottom');
   place(mapBottomItems, mapBottom - OVER_MAP_PADDING_DU - stackHeight(mapBottomItems), mapLeft, mapRight);
 
+  // Freely placed texts: `freePosition` is the centre of the line box; `align` picks the horizontal anchor.
+  for (const t of visible.filter((x) => x.slot === 'free' && x.freePosition)) {
+    const [cx, cy] = t.freePosition!;
+    out.push({ ...base(t), x: cx, y: cy - (t.sizeDu * LINE_HEIGHT) / 2, maxWidth: W, free: true });
+  }
   return out;
+}
+
+function layoutPhotos(design: Design): LaidOutPhoto[] {
+  return design.photos.map((p) => {
+    const w = p.widthDu;
+    const h = p.frame === 'circle' ? w : w * p.aspect;
+    const framePad = p.frame === 'none' || p.frame === 'circle' ? 0 : p.frame === 'border' ? w * 0.03 : w * 0.05;
+    const framePadBottom = p.frame === 'polaroid' ? w * 0.18 : framePad;
+    return {
+      id: p.id,
+      photoId: p.photoId,
+      x: p.center[0] - w / 2,
+      y: p.center[1] - h / 2,
+      w,
+      h,
+      rotationDeg: p.rotationDeg,
+      frame: p.frame,
+      frameColor: p.frameColor,
+      framePad,
+      framePadBottom,
+    };
+  });
 }

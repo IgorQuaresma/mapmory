@@ -1,7 +1,7 @@
 import { PAPER_SIZES, type Design, type ExportOptions } from '@mapmory/design-schema';
 import { contrastRatio } from './color';
 import { computeLayout, type LaidOutText } from './layout';
-import { duToPt, exportGeometry } from './units';
+import { duToMm, duToPt, exportGeometry } from './units';
 
 export type PreflightSeverity = 'error' | 'warning' | 'info';
 export interface PreflightIssue {
@@ -13,7 +13,8 @@ export interface PreflightIssue {
     | 'low-dpi'
     | 'exceeds-max-size'
     | 'empty-title'
-    | 'marker-outside-map';
+    | 'marker-outside-map'
+    | 'photo-low-resolution';
   severity: PreflightSeverity;
   target?: string;
   message: string;
@@ -65,6 +66,15 @@ export function preflight(
     }
     if (duToPt(design.page, t.sizeDu) < 6) {
       issues.push({ code: 'text-too-small', severity: 'warning', target: t.id, message: 'Text is smaller than 6 pt and may be hard to read in print.' });
+    }
+  }
+
+  // Photos: effective print resolution from the stored image's pixel width and the photo's printed width.
+  for (const p of design.photos) {
+    const printedInches = duToMm(design.page, p.widthDu) / 25.4;
+    const ppi = p.pxWidth / printedInches;
+    if (ppi < 150) {
+      issues.push({ code: 'photo-low-resolution', severity: 'warning', target: p.id, message: `This photo prints at about ${Math.round(ppi)} pixels per inch and may look soft. Make it smaller or use a larger image.` });
     }
   }
 

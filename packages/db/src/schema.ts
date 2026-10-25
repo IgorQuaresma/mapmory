@@ -170,6 +170,26 @@ export const exportJobs = pgTable(
 );
 
 /**
+ * Uploaded photos, owned by a project. The stored object is a re-encoded JPEG without metadata (no EXIF/GPS);
+ * designs reference photos by id only (plan §4.1).
+ */
+export const photos = pgTable(
+  'photos',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    objectKey: text('object_key').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    bytes: integer('bytes').notNull(),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('photos_project_idx').on(t.projectId)],
+);
+
+/**
  * Read-only preview links (plan §12 v1). Only a SHA-256 of the token is stored; a new link revokes the old one.
  */
 export const shareLinks = pgTable(

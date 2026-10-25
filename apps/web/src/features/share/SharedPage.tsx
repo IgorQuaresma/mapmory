@@ -78,6 +78,7 @@ export default function SharedPage() {
             <Poster
               design={design}
               layout={layout}
+              photoSrc={(id) => api.sharedPhotoUrl(token, id)}
               renderMap={(rect) => (
                 <MapCanvas
                   styleSpec={styleSpec}

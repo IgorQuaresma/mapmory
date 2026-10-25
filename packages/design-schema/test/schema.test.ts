@@ -40,7 +40,7 @@ describe('DesignSchema', () => {
     const d = structuredClone(sampleDesign);
     d.markers = Array.from({ length: 21 }, (_, i) => ({ ...sampleDesign.markers[0]!, id: `m${i}` }));
     expect(DesignSchema.safeParse(d).success).toBe(false);
-    expect(() => parseDesign({ ...sampleDesign, junk: 'x'.repeat(70_000) })).toThrow(/exceeds/);
+    expect(() => parseDesign({ ...sampleDesign, junk: 'x'.repeat(200_000) })).toThrow(/exceeds/);
   });
 
   it('rejects duplicate ids', () => {
@@ -66,7 +66,7 @@ describe('migrateDesign', () => {
         texts: sampleDesign.texts.map((t, i) => (i === 1 ? { ...t, fontId: 'cormorant-garamond' } : t)),
       };
       const migrated = migrateDesign(old);
-      expect(migrated.schemaVersion).toBe(2);
+      expect(migrated.schemaVersion).toBe(3);
       expect(migrated.map.themeId).toBe(v2);
       expect(migrated.texts[1]!.fontId).toBe('fraunces');
       // Everything else — colours, texts, place — is untouched.
@@ -75,9 +75,47 @@ describe('migrateDesign', () => {
     }
   });
 
+  it('upgrades v2 designs: no routes or photos, texts in their slots', () => {
+    const { routes: _r, photos: _p, ...rest } = structuredClone(sampleDesign);
+    const v2 = { ...rest, schemaVersion: 2, texts: rest.texts.map(({ freePosition: _f, rotationDeg: _d, ...t }) => t) };
+    const migrated = migrateDesign(v2);
+    expect(migrated.routes).toEqual([]);
+    expect(migrated.photos).toEqual([]);
+    expect(migrated.texts.every((t) => t.freePosition === null && t.rotationDeg === 0)).toBe(true);
+    expect(migrated).toEqual(sampleDesign);
+  });
+
   it('keeps unchanged v1 themes', () => {
     const migrated = migrateDesign({ ...structuredClone(sampleDesign), schemaVersion: 1 });
     expect(migrated).toEqual(sampleDesign);
+  });
+});
+
+describe('routes, photos and free text (v3)', () => {
+  const route = { id: 'r1', name: 'Honeymoon', points: [[2.33, 48.85], [2.35, 48.86]] as [number, number][], color: '#C42B4B', widthDu: 4, style: 'dashed' as const, endpoints: true };
+  const photo = { id: 'p1', photoId: '0f8fad5b-d9cb-469f-a165-70867728950e', center: [500, 700] as [number, number], widthDu: 300, aspect: 0.75, pxWidth: 3000, rotationDeg: -4, frame: 'polaroid' as const, frameColor: '#FFFFFF' };
+
+  it('accepts routes and photos', () => {
+    expect(DesignSchema.safeParse({ ...sampleDesign, routes: [route], photos: [photo] }).success).toBe(true);
+  });
+
+  it('rejects photo references that are not ids (no URLs)', () => {
+    expect(DesignSchema.safeParse({ ...sampleDesign, photos: [{ ...photo, photoId: 'https://evil.example/x.jpg' }] }).success).toBe(false);
+  });
+
+  it('bounds routes', () => {
+    expect(DesignSchema.safeParse({ ...sampleDesign, routes: [{ ...route, points: [[2.33, 48.85]] }] }).success).toBe(false);
+    expect(DesignSchema.safeParse({ ...sampleDesign, routes: [{ ...route, points: [[200, 48.85], [2, 48]] }] }).success).toBe(false);
+    const many = Array.from({ length: 1001 }, (_, i) => [2 + i / 1e4, 48] as [number, number]);
+    expect(DesignSchema.safeParse({ ...sampleDesign, routes: [{ ...route, points: many }] }).success).toBe(false);
+    expect(DesignSchema.safeParse({ ...sampleDesign, routes: Array.from({ length: 6 }, (_, i) => ({ ...route, id: `r${i}` })) }).success).toBe(false);
+  });
+
+  it('requires a position for freely placed text', () => {
+    const texts = sampleDesign.texts.map((t, i) => (i === 0 ? { ...t, slot: 'free' as const } : t));
+    expect(DesignSchema.safeParse({ ...sampleDesign, texts }).success).toBe(false);
+    const placed = texts.map((t, i) => (i === 0 ? { ...t, freePosition: [400, 300] as [number, number], rotationDeg: -12 } : t));
+    expect(DesignSchema.safeParse({ ...sampleDesign, texts: placed }).success).toBe(true);
   });
 });
 

@@ -14,6 +14,10 @@ export type ApiErrorCode =
   | 'feature_unavailable'
   | 'csrf_invalid'
   | 'interpretation_unavailable'
+  | 'unsupported_image'
+  | 'invalid_image'
+  | 'photo_limit'
+  | 'payload_too_large'
   | 'network_error'
   | 'internal';
 
@@ -35,7 +39,9 @@ export class ApiError extends Error {
     super(body.detail ?? body.title ?? `Request failed (${body.status})`);
     this.name = 'ApiError';
     this.status = body.status;
-    this.code = (body.code as ApiErrorCode | undefined) ?? (body.status >= 500 ? 'internal' : 'validation_failed');
+    this.code =
+      (body.code as ApiErrorCode | undefined) ??
+      (body.status >= 500 ? 'internal' : 'validation_failed');
     this.body = body;
   }
 }

@@ -1,7 +1,7 @@
 import type { Design } from '../src';
 
 export const sampleDesign: Design = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   page: {
     paper: 'A3',
     orientation: 'portrait',
@@ -31,13 +31,15 @@ export const sampleDesign: Design = {
     {
       id: 'title', role: 'title', content: 'Where it all began', fontId: 'playfair-display', weight: 700, italic: false,
       sizeDu: 64, letterSpacing: 0.02, uppercase: false, color: '#2B2B2B', align: 'center', slot: 'bottom', order: 0,
-      offsetDu: [0, 0], visible: true,
+      offsetDu: [0, 0], visible: true, freePosition: null, rotationDeg: 0,
     },
     {
       id: 'subtitle', role: 'subtitle', content: 'Pont des Arts · Paris', fontId: 'montserrat', weight: 400, italic: false,
       sizeDu: 22, letterSpacing: 0.2, uppercase: true, color: '#2B2B2B', align: 'center', slot: 'bottom', order: 1,
-      offsetDu: [0, 0], visible: true,
+      offsetDu: [0, 0], visible: true, freePosition: null, rotationDeg: 0,
     },
   ],
+  routes: [],
+  photos: [],
   attribution: { corner: 'bottom-right' },
 };

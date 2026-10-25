@@ -16,6 +16,8 @@ function PrintApp({ payload }: { payload: PrintPayload }) {
   useEffect(() => {
     let cancelled = false;
     loadDesignFonts(payload.design.texts.concat([{ fontId: 'inter', weight: 400, italic: false } as never]))
+      // Photos must be decoded before Chromium prints, or the PDF can capture an empty frame.
+      .then(() => Promise.all([...document.images].map((img) => img.decode().catch(() => undefined))))
       .then(() => {
         if (!cancelled && mapReady) window.__MAPMORY_READY__ = true;
       })
@@ -32,6 +34,7 @@ function PrintApp({ payload }: { payload: PrintPayload }) {
           design={payload.design}
           layout={layout}
           showCropMarks={payload.cropMarks}
+          photoSrc={(photoId) => `/__photo/${encodeURIComponent(photoId)}`}
           renderMap={(rect) =>
             payload.mode === 'live' ? (
               <LiveMap payload={payload} width={rect.w} height={rect.h} onReady={() => setMapReady(true)} />

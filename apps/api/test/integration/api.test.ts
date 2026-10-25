@@ -264,7 +264,7 @@ describe('maintenance', () => {
     const { project } = (await c.request('POST', '/api/v1/projects', { draft })).json();
     await h.db.update(projects).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(projects.id, project.id));
     const log = { info: () => {}, warn: () => {}, error: () => {} } as never;
-    await runMaintenance({ db: h.db, store: { deleteObjects: async () => {}, signedDownloadUrl: async () => '', ensureBucket: async () => {} }, config: { REVISIONS_KEPT: 50 } as never, log });
+    await runMaintenance({ db: h.db, store: { deleteObjects: async () => {}, signedDownloadUrl: async () => '', putObject: async () => {}, getObject: async () => null, ensureBucket: async () => {} }, config: { REVISIONS_KEPT: 50 } as never, log });
     expect(await h.db.select().from(projects).where(eq(projects.id, project.id))).toEqual([]);
   });
 });

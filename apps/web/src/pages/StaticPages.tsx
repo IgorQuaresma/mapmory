@@ -19,7 +19,7 @@ function Prose({ title, sections }: { title: string; sections: { h: string; p: s
   );
 }
 
-const PRIVACY_KEYS = ['what', 'memory', 'ai', 'retention', 'rights', 'cookies', 'processors'] as const;
+const PRIVACY_KEYS = ['what', 'memory', 'photos', 'ai', 'retention', 'rights', 'cookies', 'processors'] as const;
 
 export function PrivacyPage() {
   const { t } = useTranslation();

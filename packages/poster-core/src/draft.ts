@@ -97,6 +97,8 @@ export function generateDraft(input: DraftInput): Design {
       }),
       MARGIN_DU,
     ),
+    routes: [],
+    photos: [],
     attribution: { corner: 'bottom-right' },
   };
   return parseDesign(design);
@@ -107,7 +109,7 @@ export function defaultTexts(
   content: { title: string; subtitle: string; date: string; coordinates: string },
 ): DesignText[] {
   const { title: tt, body } = theme.typography;
-  const base = { italic: false, align: 'center' as const, slot: 'bottom' as const, offsetDu: [0, 0] as [number, number], visible: true, color: theme.textColor };
+  const base = { italic: false, align: 'center' as const, slot: 'bottom' as const, offsetDu: [0, 0] as [number, number], visible: true, color: theme.textColor, freePosition: null, rotationDeg: 0 };
   const titleSize = tt.fontId === 'great-vibes' ? 84 : 64;
   return [
     { ...base, id: 'title', role: 'title', content: content.title, fontId: tt.fontId, weight: clampWeight(tt.fontId, tt.weight), sizeDu: titleSize, letterSpacing: tt.letterSpacing, uppercase: tt.uppercase, order: 0 },

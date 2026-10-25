@@ -24,6 +24,7 @@ import { interpretationRoutes } from './routes/interpretations';
 import { meRoutes } from './routes/me';
 import { projectRoutes } from './routes/projects';
 import { sessionRoutes } from './routes/session';
+import { photoRoutes } from './routes/photos';
 import { shareRoutes } from './routes/share';
 
 export interface AppDeps {
@@ -104,6 +105,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       await v1.register(exportRoutes(deps));
       await v1.register(meRoutes(deps));
       await v1.register(shareRoutes(deps));
+      await v1.register(photoRoutes(deps));
     },
     { prefix: '/api/v1' },
   );

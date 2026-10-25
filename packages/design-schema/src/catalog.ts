@@ -36,7 +36,8 @@ export type MapShape = (typeof MAP_SHAPES)[number];
 export const FRAME_STYLES = ['none', 'thin-line', 'double-line', 'thick-line', 'airmail'] as const;
 export type FrameStyle = (typeof FRAME_STYLES)[number];
 
-export const TEXT_SLOTS = ['top', 'bottom', 'map-top', 'map-bottom'] as const;
+/** `free`: placed anywhere on the page (`freePosition`), dragged in the editor. */
+export const TEXT_SLOTS = ['top', 'bottom', 'map-top', 'map-bottom', 'free'] as const;
 export type TextSlot = (typeof TEXT_SLOTS)[number];
 
 export const TEXT_ROLES = ['title', 'subtitle', 'date', 'coordinates', 'custom'] as const;
@@ -44,6 +45,12 @@ export type TextRole = (typeof TEXT_ROLES)[number];
 
 export const LABEL_LANGUAGES = ['local', 'en', 'de', 'fr', 'es', 'pt', 'it', 'nl'] as const;
 export type LabelLanguage = (typeof LABEL_LANGUAGES)[number];
+
+export const ROUTE_STYLES = ['solid', 'dashed', 'dotted'] as const;
+export type RouteStyle = (typeof ROUTE_STYLES)[number];
+
+export const PHOTO_FRAMES = ['none', 'border', 'polaroid', 'circle'] as const;
+export type PhotoFrame = (typeof PHOTO_FRAMES)[number];
 
 export const CORNERS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'] as const;
 export type Corner = (typeof CORNERS)[number];

@@ -37,6 +37,55 @@ async function tmpFile(name: string, data: Buffer) {
   return p;
 }
 
+/** A poster with a dashed route along the Seine, a rotated polaroid photo and a rotated free text. */
+async function featurePoster(): Promise<{ design: Design; photos: Map<string, Buffer> }> {
+  const photoId = '0f8fad5b-d9cb-469f-a165-70867728950e';
+  const photo = await sharp({ create: { width: 1800, height: 1350, channels: 3, background: '#3a7bd5' } })
+    .composite([{ input: Buffer.from('<svg width="1800" height="1350"><circle cx="900" cy="675" r="400" fill="#ffc93c"/></svg>') }])
+    .jpeg()
+    .toBuffer();
+  const route = Array.from({ length: 60 }, (_, i) => [Number((2.322 + i * 0.0006).toFixed(5)), Number((48.861 - Math.sin(i / 9) * 0.002).toFixed(5))] as [number, number]);
+  const design: Design = {
+    ...base,
+    routes: [{ id: 'r1', name: 'Our walk', points: route, color: '#C42B4B', widthDu: 5, style: 'dashed', endpoints: true }],
+    photos: [{ id: 'p1', photoId, center: [760, 860], widthDu: 260, aspect: 0.75, pxWidth: 1800, rotationDeg: 6, frame: 'polaroid', frameColor: '#FFFFFF' }],
+    texts: [
+      ...base.texts,
+      { ...base.texts[0]!, id: 'note', role: 'custom', content: 'First kiss', slot: 'free', freePosition: [260, 300], rotationDeg: -8, sizeDu: 34 },
+    ],
+  };
+  return { design, photos: new Map([[photoId, photo]]) };
+}
+
+describe('routes, photos and free text in exports', () => {
+  it('embeds the photo as a second image and draws the route into the map raster', async ({ skip }) => {
+    if (!tilesUp) skip();
+    const { design, photos } = await featurePoster();
+    const { body } = await runExportPipeline(design, pdfOpts, deps, () => {}, photos);
+    const file = await tmpFile('features.pdf', body);
+    const images = (await run('pdfimages', ['-list', file])).stdout.split('\n').slice(2).filter(Boolean);
+    // The map raster plus the photo, embedded as the original JPEG (Chromium may add a soft-mask image for the shadow).
+    expect(images.some((l) => /\s1800\s+1350\s+icc\s+3\s+8\s+jpeg/.test(l))).toBe(true);
+    expect((await run('pdftotext', ['-raw', file, '-'])).stdout).toContain('First kiss'); // -raw: rotated text in stream order
+
+    // The route colour appears in the map, and not without the route.
+    const png = (d: Design) => runExportPipeline(d, { ...pdfOpts, format: 'png', cropMarks: false, bleedMm: 0 }, deps, () => {}, photos).then((r) => r.body);
+    const coral = async (buf: Buffer) => {
+      const { data } = await sharp(buf).raw().toBuffer({ resolveWithObject: true });
+      let n = 0;
+      for (let i = 0; i < data.length; i += 3) if (Math.abs(data[i]! - 0xc4) < 18 && Math.abs(data[i + 1]! - 0x2b) < 18 && Math.abs(data[i + 2]! - 0x4b) < 18) n++;
+      return n;
+    };
+    expect(await coral(await png(design))).toBeGreaterThan(2000);
+    expect(await coral(await png({ ...design, routes: [] }))).toBeLessThan(200);
+  });
+
+  it('fails clearly when a photo file is missing', async () => {
+    const { design } = await featurePoster();
+    await expect(runExportPipeline(design, pdfOpts, deps)).rejects.toThrow(/Missing photo files/);
+  });
+});
+
 describe('export correctness (plan §10)', () => {
   it('writes a PDF with trim/bleed boxes, embedded TrueType fonts, a full-resolution map and attribution', async ({ skip }) => {
     if (!tilesUp) skip();
