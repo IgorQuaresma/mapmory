@@ -7,18 +7,24 @@ import {
   LABEL_LANGUAGES,
   MAP_SHAPES,
   MARKER_ICONS,
+  PHOTO_FRAMES,
+  ROUTE_STYLES,
   PAPER_IDS,
   TEXT_ROLES,
   TEXT_SLOTS,
   THEME_IDS,
 } from './catalog';
 
-export const SCHEMA_VERSION = 2 as const;
+export const SCHEMA_VERSION = 3 as const;
 /** The trim width of every page, in design units (plan §4.1). */
 export const PAGE_WIDTH_DU = 1000;
-export const MAX_DESIGN_BYTES = 64 * 1024;
+/** Routes carry coordinates, so designs may be larger than plain layouts. */
+export const MAX_DESIGN_BYTES = 192 * 1024;
 export const MAX_MARKERS = 20;
-export const MAX_TEXTS = 8;
+export const MAX_TEXTS = 12;
+export const MAX_ROUTES = 5;
+export const MAX_ROUTE_POINTS = 1000;
+export const MAX_PHOTOS = 4;
 
 /** Plain text only: no control characters (C0/C1) or lone surrogates. */
 const plainText = (max: number) =>
@@ -123,6 +129,38 @@ export const TextSchema = z.object({
   order: z.number().int().min(0).max(20),
   offsetDu: z.tuple([du(-500, 500), du(-500, 500)]),
   visible: z.boolean(),
+  /** Centre of the line box in page coordinates, used when `slot` is `free`. */
+  freePosition: z.tuple([du(-200, 1200), du(-200, 2400)]).nullable(),
+  rotationDeg: z.number().min(-90).max(90),
+});
+
+/** A track drawn on the map: an imported GPX/GeoJSON route or a line connecting the places. */
+export const RouteSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{1,24}$/),
+  name: plainText(60),
+  points: z.array(LngLat).min(2).max(MAX_ROUTE_POINTS),
+  color: HexColor,
+  widthDu: du(1, 24),
+  style: z.enum(ROUTE_STYLES),
+  /** Dots at the start and the end of the route. */
+  endpoints: z.boolean(),
+});
+
+/**
+ * A user photo placed on the page. `photoId` names an uploaded, re-encoded image owned by the project; the design
+ * never holds a URL (plan §4.1). `aspect` (height / width) and `pxWidth` come from the stored image.
+ */
+export const PhotoSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{1,24}$/),
+  photoId: z.uuid(),
+  /** Centre of the photo in page coordinates. */
+  center: z.tuple([du(-200, 1200), du(-200, 2400)]),
+  widthDu: du(40, 1000),
+  aspect: z.number().min(0.2).max(5),
+  pxWidth: z.number().int().min(1).max(20000),
+  rotationDeg: z.number().min(-180).max(180),
+  frame: z.enum(PHOTO_FRAMES),
+  frameColor: HexColor,
 });
 
 export const DesignSchema = z
@@ -132,6 +170,8 @@ export const DesignSchema = z
     map: MapSchema,
     markers: z.array(MarkerSchema).max(MAX_MARKERS),
     texts: z.array(TextSchema).max(MAX_TEXTS),
+    routes: z.array(RouteSchema).max(MAX_ROUTES),
+    photos: z.array(PhotoSchema).max(MAX_PHOTOS),
     attribution: z.object({ corner: z.enum(CORNERS) }),
   })
   .superRefine((d, ctx) => {
@@ -142,6 +182,18 @@ export const DesignSchema = z
       }
       if (ids.has(t.id)) ctx.addIssue({ code: 'custom', path: ['texts', i, 'id'], message: 'Duplicate text id' });
       ids.add(t.id);
+    }
+    for (const [key, list] of [['routes', d.routes], ['photos', d.photos]] as const) {
+      const seen = new Set<string>();
+      for (const [i, item] of list.entries()) {
+        if (seen.has(item.id)) ctx.addIssue({ code: 'custom', path: [key, i, 'id'], message: `Duplicate ${key} id` });
+        seen.add(item.id);
+      }
+    }
+    for (const [i, t] of d.texts.entries()) {
+      if (t.slot === 'free' && !t.freePosition) {
+        ctx.addIssue({ code: 'custom', path: ['texts', i, 'freePosition'], message: 'A freely placed text needs a position' });
+      }
     }
     const markerIds = new Set<string>();
     for (const [i, m] of d.markers.entries()) {
@@ -168,6 +220,8 @@ export type LayerKey = keyof Layers;
 export type Marker = z.infer<typeof MarkerSchema>;
 export type DesignText = z.infer<typeof TextSchema>;
 export type Inset = z.infer<typeof InsetSchema>;
+export type Route = z.infer<typeof RouteSchema>;
+export type Photo = z.infer<typeof PhotoSchema>;
 
 /** Validates a design and its serialized size. Throws a ZodError on failure. */
 export function parseDesign(input: unknown): Design {

@@ -21,6 +21,15 @@ const migrations: Record<number, Migration> = {
       : doc.texts;
     return { ...doc, map: { ...map, themeId }, texts };
   },
+  /** v2 → v3 (2026-10-25): routes, photos, and freely placed, rotatable texts. */
+  2: (doc) => ({
+    ...doc,
+    routes: [],
+    photos: [],
+    texts: Array.isArray(doc.texts)
+      ? doc.texts.map((t: Record<string, unknown>) => ({ freePosition: null, rotationDeg: 0, ...t }))
+      : doc.texts,
+  }),
 };
 
 export function migrateDesign(input: unknown): Design {
