@@ -54,6 +54,14 @@ export default function ExportPage() {
   const geometry = design ? exportGeometry(design, options) : null;
   const issues = useMemo(() => (design ? preflight(design, options, measure) : []), [design, options, measure]);
   const blocking = issues.some((i) => i.severity === 'error');
+  /** Names what an issue is about: a text, marker or photo by id, a race leg by its label. */
+  const issueTarget = (code: string, target: string) => {
+    if (code === 'leg-without-route' || code === 'stats-too-wide') {
+      const leg = design?.sport?.legs.find((l) => l.id === target);
+      return t('targets.leg', { name: leg ? leg.label || t(`race.disciplines.${leg.discipline}`) : target });
+    }
+    return t(code === 'marker-outside-map' ? 'targets.marker' : code === 'photo-low-resolution' ? 'targets.photo' : 'targets.text', { id: target });
+  };
 
   const exportsList = useQuery({ queryKey: queryKeys.exports(id), queryFn: () => api.listExports(id), enabled: !!session.data?.user });
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -170,7 +178,7 @@ export default function ExportPage() {
                     <span>
                       <span className="sr-only">{t(`export.severity.${i.severity}`)}: </span>
                       {t(`preflight.${i.code}`, { dpi: options.dpi, recommended: recommendedDpi })}
-                      {i.target && <span className="text-ink-soft"> ({t(i.code === 'marker-outside-map' ? 'targets.marker' : i.code === 'photo-low-resolution' ? 'targets.photo' : 'targets.text', { id: i.target })})</span>}
+                      {i.target && <span className="text-ink-soft"> ({issueTarget(i.code, i.target)})</span>}
                     </span>
                   </li>
                 ))}

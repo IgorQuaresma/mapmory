@@ -105,6 +105,6 @@ test('manual path when the place is not found', async ({ page }) => {
 test('German UI', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Language').selectOption('de');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Deine Erinnerung');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Dein Rennen');
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 });

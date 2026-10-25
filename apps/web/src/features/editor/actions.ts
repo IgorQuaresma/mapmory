@@ -1,4 +1,4 @@
-import type { Design, DesignText, Photo, Route } from '@mapmory/design-schema';
+import type { Design, DesignText, Leg, Photo, Route, Sport } from '@mapmory/design-schema';
 import { pageHeightDu } from '@mapmory/poster-core';
 import type { MapView } from '../../components/MapCanvas';
 import { useEditor } from '../../store/editor';
@@ -12,16 +12,27 @@ export const gesture = {
 
 const round = (v: number, digits: number) => Number(v.toFixed(digits));
 
+const cleanView = (view: Partial<MapView>) => ({
+  ...(view.center && { center: [round(view.center[0], 7), round(view.center[1], 7)] as [number, number] }),
+  ...(view.zoom !== undefined && { zoom: round(Math.min(18, Math.max(1, view.zoom)), 4) }),
+  ...(view.bearing !== undefined && { bearing: round(Math.min(180, Math.max(-180, view.bearing)), 2) }),
+});
+
 export function setView(view: Partial<MapView>) {
-  return update((d) => ({
-    ...d,
-    map: {
-      ...d.map,
-      ...(view.center && { center: [round(view.center[0], 7), round(view.center[1], 7)] as [number, number] }),
-      ...(view.zoom !== undefined && { zoom: round(Math.min(18, Math.max(1, view.zoom)), 4) }),
-      ...(view.bearing !== undefined && { bearing: round(Math.min(180, Math.max(-180, view.bearing)), 2) }),
-    },
-  }));
+  return update((d) => ({ ...d, map: { ...d.map, ...cleanView(view) } }));
+}
+
+/** The view of one panel of a race poster. */
+export function setLegView(legId: string, view: Partial<MapView>) {
+  return updateLeg(legId, cleanView(view));
+}
+
+export function updateLeg(legId: string, patch: Partial<Leg>) {
+  return update((d) => (d.sport ? { ...d, sport: { ...d.sport, legs: d.sport.legs.map((l) => (l.id === legId ? { ...l, ...patch } : l)) } } : d));
+}
+
+export function updateSport(patch: Partial<Sport>) {
+  return update((d) => (d.sport ? { ...d, sport: { ...d.sport, ...patch } } : d));
 }
 
 export function updateMap(patch: Partial<Design['map']>) {

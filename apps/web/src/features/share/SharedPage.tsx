@@ -42,7 +42,11 @@ export default function SharedPage() {
     if (design) void loadDesignFonts(design.texts);
   }, [design]);
   const layout = useMemo(() => (design ? computeLayout(design) : null), [design]);
-  const styleSpec = useMemo(() => (design && catalog.data ? buildStyle(design, catalog.data.tiles) : null), [design, catalog.data]);
+  // One style per map panel: race posters draw each leg's route in its own panel.
+  const styles = useMemo(
+    () => (design && layout && catalog.data ? layout.panels.map((p) => buildStyle(design, catalog.data!.tiles, p.leg?.id ?? null)) : null),
+    [design, layout, catalog.data],
+  );
 
   if (shared.isError) {
     return (
@@ -56,7 +60,7 @@ export default function SharedPage() {
       </main>
     );
   }
-  if (!design || !layout || !styleSpec) {
+  if (!design || !layout || !styles) {
     return (
       <main id="main" className="flex flex-1 items-center justify-center p-12">
         <Spinner label={t('editor.loading')} />
@@ -79,10 +83,10 @@ export default function SharedPage() {
               design={design}
               layout={layout}
               photoSrc={(id) => api.sharedPhotoUrl(token, id)}
-              renderMap={(rect) => (
+              renderMap={(rect, panel) => (
                 <MapCanvas
-                  styleSpec={styleSpec}
-                  view={{ center: design.map.center, zoom: design.map.zoom, bearing: design.map.bearing }}
+                  styleSpec={styles[panel.index]!}
+                  view={{ center: panel.viewport.center, zoom: panel.viewport.zoom, bearing: panel.viewport.bearing }}
                   interactive={false}
                   pixelRatio={1}
                   ariaLabel={t('editor.preview.mapLabel')}

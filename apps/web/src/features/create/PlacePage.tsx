@@ -1,8 +1,8 @@
-import { MOODS, type GeocodeResult, type Interpretation, type Mood } from '@mapmory/design-schema';
-import { boundsOf, buildStyle, formatCoordinates, generateDraft } from '@mapmory/poster-core';
+import { MOODS, SPORT_EVENTS, type DraftSport, type GeocodeResult, type Interpretation, type Mood, type SportEvent } from '@mapmory/design-schema';
+import { boundsOf, buildStyle, formatCoordinates, formatDistance, formatDuration, generateDraft } from '@mapmory/poster-core';
 import { MOOD_THEME } from '@mapmory/themes';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, MapPin, MapPinPlus, Star, Trash2 } from '../../components/icons';
+import { ArrowLeft, ArrowRight, MapPin, MapPinPlus, Star, Trash2, Trophy } from '../../components/icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -10,7 +10,9 @@ import { api } from '../../api';
 import { MapCanvas, type MapView } from '../../components/MapCanvas';
 import { PlaceSearch } from '../../components/PlaceSearch';
 import { Stepper } from '../../components/Stepper';
-import { Button, Callout, Field, IconButton, Select, Spinner, TextInput, cx } from '../../components/ui';
+import { DISCIPLINE_ICONS, DistanceField, TimeField } from '../../components/RaceFields';
+import { Button, Callout, Field, IconButton, Select, Spinner, Switch, TextInput, cx } from '../../components/ui';
+import { changeEvent, emptyRace } from '../editor/race';
 import { useFocusHeading, usePrefersReducedMotion } from '../../lib/hooks';
 import { maplibregl, type MapLibreMap } from '../../lib/maplibre';
 import { queryKeys, useCatalog } from '../../lib/queries';
@@ -82,6 +84,7 @@ export default function PlacePage() {
           date: w.date,
           mood: w.mood,
           locale: i18n.language,
+          ...(w.raceOn && w.race && { sport: w.race }),
         },
         keepMemoryText: w.keepMemoryText && !!w.memoryText,
         memoryText: w.keepMemoryText && w.memoryText ? w.memoryText : undefined,
@@ -173,6 +176,7 @@ export default function PlacePage() {
             {pinMode ? t('place.pinActive') : t('place.dropPin')}
           </Button>
 
+          <RaceCard />
           <DetailsForm />
         </div>
 
@@ -219,10 +223,86 @@ export default function PlacePage() {
   );
 }
 
+/** The race found in the memory, editable before the poster is made; or a way to say "this was a race". */
+function RaceCard() {
+  const { t } = useTranslation();
+  const w = useWizard();
+  const race = w.race;
+  if (!race) {
+    return (
+      <button
+        type="button"
+        onClick={() => w.patch({ race: emptyRace('triathlon'), raceOn: true })}
+        className="flex w-fit items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-sm hover:border-ink-soft"
+        data-testid="race-add"
+      >
+        <Trophy aria-hidden className="size-4 text-brand" />
+        {t('race.wasRace')}
+      </button>
+    );
+  }
+  const setRace = (r: DraftSport) => w.patch({ race: r });
+  const summary = race.legs
+    .map((l) => [t(`race.disciplines.${l.discipline}`), l.distanceKm ? formatDistance(l.distanceKm, l.discipline, 'metric') : null].filter(Boolean).join(' '))
+    .join(' · ');
+  return (
+    <section aria-labelledby="race-card" className="flex flex-col gap-4 rounded-2xl border-2 border-brand/40 bg-white p-4" data-testid="race-card">
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sun/40 text-brand">
+          <Trophy aria-hidden className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 id="race-card" className="text-sm font-semibold">
+            {race.name !== null ? t('race.found', { name: race.name }) : t('race.cardTitle')}
+          </h2>
+          <p className="text-sm text-ink-soft" data-testid="race-summary">
+            {t(`race.events.${race.event}`)} — {summary}
+            {race.finishTimeS !== null && ` · ${t('race.finish')} ${formatDuration(race.finishTimeS)}`}
+          </p>
+        </div>
+      </div>
+      <Switch label={t('race.switch')} hint={t('race.switchHint')} checked={w.raceOn} onChange={(raceOn) => w.patch({ raceOn })} />
+      {w.raceOn && (
+        <div className="flex flex-col gap-3">
+          <Field label={t('race.event')}>
+            {({ id }) => (
+              <Select<SportEvent>
+                id={id}
+                value={race.event}
+                onChange={(event) => setRace(changeEvent(race, event))}
+                options={SPORT_EVENTS.map((e) => ({ value: e, label: t(`race.events.${e}`) }))}
+              />
+            )}
+          </Field>
+          <ul className="flex flex-col gap-3">
+            {race.legs.map((leg, i) => {
+              const Icon = DISCIPLINE_ICONS[leg.discipline];
+              const setLeg = (patch: Partial<DraftSport['legs'][number]>) => setRace({ ...race, legs: race.legs.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
+              return (
+                <li key={`${race.event}-${i}`} className="flex flex-col gap-2 rounded-xl bg-paper p-3">
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    <Icon aria-hidden className="size-4 text-brand" />
+                    {t(`race.disciplines.${leg.discipline}`)}
+                  </span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <DistanceField label={t('race.distance')} value={leg.distanceKm} onChange={(distanceKm) => setLeg({ distanceKm })} testId={`race-distance-${i}`} />
+                    <TimeField label={t('race.time')} value={leg.timeS} onChange={(timeS) => setLeg({ timeS })} testId={`race-time-${i}`} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <TimeField label={t('race.finishTime')} hint={t('race.finishTimeHint')} value={race.finishTimeS} onChange={(finishTimeS) => setRace({ ...race, finishTimeS })} testId="race-finish-time" />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DetailsForm() {
   const { t } = useTranslation();
   const w = useWizard();
-  const ideas = w.result?.interpretation.titleIdeas ?? [];
+  const ideas = [...new Set([...(w.raceOn && w.race?.name ? [w.race.name] : []), ...(w.result?.interpretation.titleIdeas ?? [])])];
   const date = w.date;
   const setPrecision = (precision: Interpretation['date']['precision']) => {
     const now = new Date();
@@ -279,17 +359,20 @@ function DetailsForm() {
           </Field>
         )}
       </div>
-      <Field label={t('place.mood')} hint={t('place.moodHint')}>
-        {({ id, describedBy }) => (
-          <Select<Mood>
-            id={id}
-            describedBy={describedBy}
-            value={w.mood}
-            onChange={(mood) => w.patch({ mood })}
-            options={MOODS.map((m) => ({ value: m, label: `${t(`moods.${m}`)} — ${t(`themes.${MOOD_THEME[m]}`)}` }))}
-          />
-        )}
-      </Field>
+      {/* Race posters start with a sport style, so the mood (which only picks the first style) does not apply. */}
+      {!(w.raceOn && w.race) && (
+        <Field label={t('place.mood')} hint={t('place.moodHint')}>
+          {({ id, describedBy }) => (
+            <Select<Mood>
+              id={id}
+              describedBy={describedBy}
+              value={w.mood}
+              onChange={(mood) => w.patch({ mood })}
+              options={MOODS.map((m) => ({ value: m, label: `${t(`moods.${m}`)} — ${t(`themes.${MOOD_THEME[m]}`)}` }))}
+            />
+          )}
+        </Field>
+      )}
       {w.memoryText && !w.manual && (
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" className="mt-1 size-4 accent-brand" checked={w.keepMemoryText} onChange={(e) => w.patch({ keepMemoryText: e.target.checked })} />

@@ -1,15 +1,31 @@
-import type { DraftInput } from '@mapmory/design-schema';
-import { ArrowRight, Download, Lock, MapPinned, PenLine, Palette, ShieldCheck, Trash2 } from '../components/icons';
+import type { DraftInput, ThemeId } from '@mapmory/design-schema';
+import { ArrowRight, Bike, Download, Lock, MapPinned, PenLine, Palette, Run, ShieldCheck, Swim, Trash2 } from '../components/icons';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ExamplePoster } from '../components/ExamplePoster';
 import { FIXTURE_PLACES, toResult } from '../api/fixtures';
 
 const place = (id: string) => toResult(FIXTURE_PLACES.find((p) => p.id === id)!);
-const EXAMPLES: { input: DraftInput; themeId: 'blush' | 'classic-ink' | 'night-train' }[] = [
-  { themeId: 'blush', input: { places: [place('W1')], title: 'Where it all began', subtitle: null, date: { iso: '2019-06-14', precision: 'day' }, mood: 'romantic', locale: 'en' } },
+/** The hero: an Ironman with its three legs in front, a marathon and a classic memory poster behind it. */
+const EXAMPLES: { input: DraftInput; themeId: ThemeId }[] = [
+  {
+    themeId: 'race-day',
+    input: {
+      places: [place('R62400')], title: null, subtitle: null, date: { iso: '2025-06-29', precision: 'day' }, mood: 'celebratory', locale: 'en',
+      sport: {
+        event: 'triathlon', name: 'Ironman Frankfurt', finishTimeS: 42127,
+        legs: [{ discipline: 'swim', distanceKm: 3.8, timeS: 3912 }, { discipline: 'bike', distanceKm: 180, timeS: 20412 }, { discipline: 'run', distanceKm: 42.2, timeS: 16803 }],
+      },
+    },
+  },
   { themeId: 'classic-ink', input: { places: [place('W8')], title: 'Our first trip', subtitle: null, date: { iso: '2022-08', precision: 'month' }, mood: 'adventurous', locale: 'en' } },
-  { themeId: 'night-train', input: { places: [place('W10')], title: 'The night we met', subtitle: null, date: { iso: '2017', precision: 'year' }, mood: 'neutral', locale: 'en' } },
+  {
+    themeId: 'finisher',
+    input: {
+      places: [place('R62422')], title: null, subtitle: null, date: { iso: '2024-09-29', precision: 'day' }, mood: 'celebratory', locale: 'en',
+      sport: { event: 'run', name: 'Berlin Marathon', finishTimeS: 14320, legs: [{ discipline: 'run', distanceKm: 42.195, timeS: 14320 }] },
+    },
+  },
 ];
 
 export default function LandingPage() {
@@ -21,6 +37,18 @@ export default function LandingPage() {
           <p className="w-fit rounded-full bg-sun px-3 py-1 text-xs font-semibold uppercase tracking-wider text-ink">{t('landing.kicker')}</p>
           <h1 className="font-display text-4xl leading-tight sm:text-6xl">{t('landing.title')}</h1>
           <p className="max-w-xl text-lg text-ink-soft">{t('landing.lead')}</p>
+          <ul className="flex flex-wrap gap-2" aria-label={t('landing.legsLabel')}>
+            {[
+              { icon: Swim, key: 'swim' },
+              { icon: Bike, key: 'bike' },
+              { icon: Run, key: 'run' },
+            ].map(({ icon: Icon, key }) => (
+              <li key={key} className="flex items-center gap-2 rounded-full border border-line bg-white px-3 py-1.5 text-sm">
+                <Icon aria-hidden className="size-4 text-brand" />
+                {t(`landing.legs.${key}`)}
+              </li>
+            ))}
+          </ul>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/create" className="inline-flex h-12 items-center gap-2 rounded-lg bg-brand px-6 font-medium text-white shadow-sm hover:bg-brand-strong [--icon-duo:var(--color-sun)]" data-testid="cta-create">
               {t('landing.cta')}

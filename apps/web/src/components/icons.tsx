@@ -30,6 +30,9 @@ import {
   Minus as PhMinus,
   Palette as PhPalette,
   PencilSimpleLine,
+  PersonSimpleBike,
+  PersonSimpleRun,
+  PersonSimpleSwim,
   Plus as PhPlus,
   Rectangle,
   Scan,
@@ -41,7 +44,10 @@ import {
   TextAlignCenter,
   TextAlignLeft,
   TextAlignRight,
+  Timer as PhTimer,
   Trash,
+  Trophy as PhTrophy,
+  UploadSimple,
   Warning,
   X as PhX,
   XCircle,
@@ -69,6 +75,7 @@ export const ArrowDown = duotone(PhArrowDown);
 export const ArrowLeft = duotone(PhArrowLeft);
 export const ArrowRight = duotone(PhArrowRight);
 export const ArrowUp = duotone(PhArrowUp);
+export const Bike = duotone(PersonSimpleBike);
 export const Check = duotone(PhCheck);
 export const ChevronDown = duotone(CaretDown);
 export const CircleCheck = duotone(CheckCircle);
@@ -99,13 +106,18 @@ export const RectangleHorizontal = duotone(Rectangle);
 export const RectangleVertical = duotone(Rectangle, 'rotate-90');
 export const Redo2 = duotone(ArrowUUpRight);
 export const RotateCcw = duotone(ArrowCounterClockwise);
+export const Run = duotone(PersonSimpleRun);
 export const ScanLine = duotone(Scan);
 export const Search = duotone(MagnifyingGlass);
 export const Share2 = duotone(ShareNetwork);
 export const ShieldCheck = duotone(PhShieldCheck);
 export const Sparkles = duotone(Sparkle);
 export const Star = duotone(PhStar);
+export const Swim = duotone(PersonSimpleSwim);
+export const Timer = duotone(PhTimer);
 export const Trash2 = duotone(Trash);
 export const TriangleAlert = duotone(Warning);
+export const Trophy = duotone(PhTrophy);
 export const Undo2 = duotone(ArrowUUpLeft);
+export const Upload = duotone(UploadSimple);
 export const X = duotone(PhX);

@@ -1,6 +1,9 @@
 import type { GeocodeResult } from '@mapmory/design-schema';
 
-/** Geocoder fixture for the mock API, covering the four dev tile regions (Paris, Münster, Lisbon, Manhattan). */
+/**
+ * Geocoder fixture for the mock API, covering the four dev tile regions (Paris, Münster, Lisbon, Manhattan), plus two race
+ * cities (Frankfurt, Berlin) for the race poster examples.
+ */
 export interface FixturePlace extends GeocodeResult {
   aliases: string[];
 }
@@ -21,6 +24,8 @@ export const FIXTURE_PLACES: FixturePlace[] = [
   { id: 'W10', name: 'Brooklyn Bridge', label: 'Brooklyn Bridge, New York, United States', lngLat: [-73.99686, 40.70608], bbox: null, type: 'poi', city: 'New York', country: 'United States', aliases: ['brooklyn bridge'] },
   { id: 'W11', name: 'Central Park', label: 'Central Park, Manhattan, New York, United States', lngLat: [-73.96546, 40.78255], bbox: [-73.9819, 40.7644, -73.9493, 40.8007], type: 'poi', city: 'New York', country: 'United States', aliases: ['central park'] },
   { id: 'W12', name: 'Times Square', label: 'Times Square, Manhattan, New York, United States', lngLat: [-73.98566, 40.75797], bbox: null, type: 'poi', city: 'New York', country: 'United States', aliases: ['times square'] },
+  { id: 'R62400', name: 'Frankfurt am Main', label: 'Frankfurt am Main, Hesse, Germany', lngLat: [8.68212, 50.11064], bbox: [8.4727, 50.0155, 8.8004, 50.2271], type: 'city', city: 'Frankfurt am Main', country: 'Germany', aliases: ['frankfurt am main', 'frankfurt'] },
+  { id: 'R62422', name: 'Berlin', label: 'Berlin, Germany', lngLat: [13.40495, 52.52001], bbox: [13.0884, 52.3383, 13.7612, 52.6755], type: 'city', city: 'Berlin', country: 'Germany', aliases: ['berlin', 'berlim'] },
   { id: 'R175905', name: 'New York', label: 'New York, United States', lngLat: [-73.9857, 40.7484], bbox: [-74.05, 40.68, -73.93, 40.82], type: 'city', city: 'New York', country: 'United States', aliases: ['new york', 'nyc', 'manhattan'] },
 ];
 

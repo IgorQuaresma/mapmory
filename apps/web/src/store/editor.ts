@@ -2,7 +2,7 @@ import { DesignSchema, type Design } from '@mapmory/design-schema';
 import { temporal, type TemporalState } from 'zundo';
 import { create, useStore } from 'zustand';
 
-export type PanelId = 'style' | 'area' | 'markers' | 'routes' | 'photos' | 'text' | 'layout';
+export type PanelId = 'race' | 'style' | 'area' | 'markers' | 'routes' | 'photos' | 'text' | 'layout';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
 
 export interface UiState {
@@ -11,6 +11,8 @@ export interface UiState {
   selectedPhotoId: string | null;
   /** A freely placed text selected on the poster (opens its card in the Text panel). */
   selectedTextId: string | null;
+  /** The race leg whose panel is highlighted (Race panel and preview). */
+  selectedLegId: string | null;
   showGuides: boolean;
   mapLocked: boolean;
   /** Preview zoom relative to "fit" (1 = fit to available space). */
@@ -51,6 +53,7 @@ const initialUi: UiState = {
   selectedMarkerId: null,
   selectedPhotoId: null,
   selectedTextId: null,
+  selectedLegId: null,
   showGuides: false,
   mapLocked: false,
   previewZoom: 1,
@@ -73,7 +76,8 @@ export const useEditor = create<EditorState>()(
       load: (projectId, design, revision) => {
         const t = useEditor.temporal.getState();
         t.pause();
-        set({ projectId, design, revision, ui: { ...initialUi }, save: { ...initialSave, status: 'saved' } });
+        // Race posters open on the Race panel, where the activity import is.
+        set({ projectId, design, revision, ui: { ...initialUi, panel: design.sport ? 'race' : 'style' }, save: { ...initialSave, status: 'saved' } });
         t.clear();
         t.resume();
         gestureDepth = 0;

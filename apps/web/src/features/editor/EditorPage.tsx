@@ -16,13 +16,16 @@ import { AreaPanel } from './panels/AreaPanel';
 import { LayoutPanel } from './panels/LayoutPanel';
 import { MarkersPanel } from './panels/MarkersPanel';
 import { PhotosPanel } from './panels/PhotosPanel';
+import { RacePanel } from './panels/RacePanel';
 import { RoutesPanel } from './panels/RoutesPanel';
 import { StylePanel } from './panels/StylePanel';
 import { TextPanel } from './panels/TextPanel';
 import { ShareDialog } from '../share/ShareDialog';
 import { PosterPreview } from './PosterPreview';
 
+// Race comes first: this edition leads with race posters (one map per leg).
 const PANELS: { id: PanelId; render: () => ReactNode }[] = [
+  { id: 'race', render: () => <RacePanel /> },
   { id: 'style', render: () => <StylePanel /> },
   { id: 'area', render: () => <AreaPanel /> },
   { id: 'markers', render: () => <MarkersPanel /> },

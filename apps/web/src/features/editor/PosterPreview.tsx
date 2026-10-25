@@ -1,5 +1,5 @@
 import type { Design } from '@mapmory/design-schema';
-import { buildStyle, computeLayout, fromScreen, mmToDu, styleUpdates, type PosterLayout, type Rect } from '@mapmory/poster-core';
+import { buildStyle, computeLayout, fromScreen, mmToDu, styleUpdates, type LaidOutPanel, type PosterLayout, type Rect } from '@mapmory/poster-core';
 import { Poster } from '@mapmory/poster-react';
 import { Maximize, Minus, Plus, ScanLine } from '../../components/icons';
 import { useCallback, useMemo, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
@@ -11,7 +11,7 @@ import type { MapLibreMap } from '../../lib/maplibre';
 import { useCatalog } from '../../lib/queries';
 import { api } from '../../api';
 import { useDesign, useEditor } from '../../store/editor';
-import { clampToPage, gesture, setView, updateMarker, updatePhoto, updateText } from './actions';
+import { clampToPage, gesture, setLegView, setView, updateMarker, updatePhoto, updateText } from './actions';
 
 const PREVIEW_PADDING = 32;
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.5, 2, 3];
@@ -62,7 +62,7 @@ export function PosterPreview() {
                 <Poster
                   design={design}
                   layout={layout}
-                  renderMap={(rect) => <EditorMap rect={rect} scale={scale} />}
+                  renderMap={(rect, panel) => <EditorMap rect={rect} panel={panel} scale={scale} />}
                   onMarkerPointerDown={onMarkerPointerDown}
                   selectedMarkerId={ui.panel === 'markers' ? ui.selectedMarkerId : null}
                   photoSrc={(id) => api.photoUrl(id)}
@@ -105,25 +105,34 @@ export function PosterPreview() {
   );
 }
 
-/** The live map inside the poster's map rect. */
-function EditorMap({ rect, scale }: { rect: Rect; scale: number }) {
+/**
+ * The live map inside one map panel: the whole map of a single-map poster, or one leg of a race poster. Moving a leg
+ * panel changes only that leg's view.
+ */
+function EditorMap({ rect, panel, scale }: { rect: Rect; panel: LaidOutPanel; scale: number }) {
   const { t } = useTranslation();
   const design = useDesign();
   const locked = useEditor((s) => s.ui.mapLocked);
+  const highlighted = useEditor((s) => s.ui.panel === 'race' && s.ui.selectedLegId !== null && s.ui.selectedLegId === panel.leg?.id);
+  const setUi = useEditor((s) => s.setUi);
   const tiles = useCatalog().data!.tiles;
+  const legId = panel.leg?.id ?? null;
   const { themeId, palette, layers, roadWeight, labelLanguage } = design.map;
   const routes = design.routes;
+  // Which route each panel shows; a change rebuilds the style like a route change does.
+  const legRoutes = design.sport?.legs.map((l) => `${l.id}:${l.routeId}`).join() ?? '';
   // buildStyle only depends on the map's style fields and routes; keep the style stable during pans.
   const styleSpec = useMemo(
-    () => buildStyle(design, tiles),
+    () => buildStyle(design, tiles, legId),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tiles, themeId, palette, layers, roadWeight, labelLanguage, routes],
+    [tiles, themeId, palette, layers, roadWeight, labelLanguage, routes, legRoutes, legId],
   );
   const applied = useRef<Design>(design);
 
+  const source = panel.leg ?? design.map;
   const view = useMemo<MapView>(
-    () => ({ center: design.map.center, zoom: design.map.zoom, bearing: design.map.bearing }),
-    [design.map.center, design.map.zoom, design.map.bearing],
+    () => ({ center: source.center, zoom: source.zoom, bearing: source.bearing }),
+    [source.center, source.zoom, source.bearing],
   );
 
   const applyStyle = useCallback(
@@ -142,14 +151,21 @@ function EditorMap({ rect, scale }: { rect: Rect; scale: number }) {
     [],
   );
 
-  const onUserMove = useCallback((phase: MovePhase, v: MapView) => {
-    if (phase === 'start') gesture.start();
-    setView(v);
-    if (phase === 'end') gesture.end();
-  }, []);
+  const onUserMove = useCallback(
+    (phase: MovePhase, v: MapView) => {
+      if (phase === 'start') {
+        gesture.start();
+        if (legId) setUi({ selectedLegId: legId });
+      }
+      if (legId) setLegView(legId, v);
+      else setView(v);
+      if (phase === 'end') gesture.end();
+    },
+    [legId, setUi],
+  );
 
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
-  return (
+  const map = (
     <MapCanvas
       styleSpec={styleSpec}
       view={view}
@@ -157,9 +173,16 @@ function EditorMap({ rect, scale }: { rect: Rect; scale: number }) {
       applyStyle={applyStyle}
       interactive={!locked}
       pixelRatio={Math.min(3, Math.max(1, dpr * scale))}
-      ariaLabel={t('editor.preview.mapLabel')}
+      ariaLabel={panel.leg ? t('editor.preview.legMapLabel', { leg: panel.leg.label || t(`race.disciplines.${panel.leg.discipline}`) }) : t('editor.preview.mapLabel')}
       style={{ width: Math.round(rect.w), height: Math.round(rect.h) }}
     />
+  );
+  if (!panel.leg) return map;
+  return (
+    <div className="relative" style={{ width: Math.round(rect.w), height: Math.round(rect.h) }} data-testid={`leg-map-${panel.leg.id}`}>
+      {map}
+      {highlighted && <div aria-hidden className="pointer-events-none absolute inset-0 border-[4px] border-dashed border-focus" data-testid="leg-highlight" />}
+    </div>
   );
 }
 
@@ -177,14 +200,21 @@ function useMarkerDrag(posterRef: RefObject<HTMLDivElement | null>, layout: Post
       const el = posterRef.current;
       if (!el) return;
       gesture.start();
+      // On a race poster a marker can show in several panels: drag it in the panel where the drag started.
+      const toPage = (ev: { clientX: number; clientY: number }, l: PosterLayout, s: number) => {
+        const box = el.getBoundingClientRect();
+        return [(ev.clientX - box.left) / s + l.outer.x, (ev.clientY - box.top) / s + l.outer.y] as const;
+      };
+      const [px, py] = toPage(e, latest.current.layout, latest.current.scale);
+      const panelIndex =
+        latest.current.layout.panels.find((p) => px >= p.rect.x && px <= p.rect.x + p.rect.w && py >= p.rect.y && py <= p.rect.y + p.rect.h)?.index ?? 0;
       const move = (ev: PointerEvent) => {
         const { layout: l, scale: s } = latest.current;
-        const box = el.getBoundingClientRect();
-        const x = (ev.clientX - box.left) / s + l.outer.x - l.map.rect.x;
-        const y = (ev.clientY - box.top) / s + l.outer.y - l.map.rect.y;
-        const cx = Math.min(l.map.rect.w, Math.max(0, x));
-        const cy = Math.min(l.map.rect.h, Math.max(0, y));
-        const [lng, lat] = fromScreen([cx, cy], l.map.viewport);
+        const panel = l.panels[panelIndex] ?? l.panels[0]!;
+        const [pageX, pageY] = toPage(ev, l, s);
+        const cx = Math.min(panel.rect.w, Math.max(0, pageX - panel.rect.x));
+        const cy = Math.min(panel.rect.h, Math.max(0, pageY - panel.rect.y));
+        const [lng, lat] = fromScreen([cx, cy], panel.viewport);
         updateMarker(id, { lngLat: [Number(lng.toFixed(7)), Number(lat.toFixed(7))] });
       };
       const up = () => {

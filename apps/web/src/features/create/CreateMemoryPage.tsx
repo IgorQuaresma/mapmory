@@ -12,7 +12,8 @@ import { useFocusHeading } from '../../lib/hooks';
 import { useSession } from '../../lib/queries';
 import { useWizard } from './wizard';
 
-const EXAMPLES = ['engaged', 'grewUp', 'trip'] as const;
+// Race memories first (this edition leads with race posters), then one memory of a different kind.
+const EXAMPLES = ['ironman', 'marathon', 'granFondo', 'engaged'] as const;
 
 export default function CreateMemoryPage() {
   const { t, i18n } = useTranslation();

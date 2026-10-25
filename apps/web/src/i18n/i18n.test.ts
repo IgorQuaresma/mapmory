@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { CORNERS, EXPORT_FORMATS, PHOTO_FRAMES, ROUTE_STYLES, EXPORT_STATUSES, FRAME_STYLES, LABEL_LANGUAGES, MAP_SHAPES, MARKER_ICONS, MOODS, TEXT_ROLES, TEXT_SLOTS, THEME_IDS, LAYER_KEYS, PALETTE_KEYS } from '@mapmory/design-schema';
+import { CORNERS, DISCIPLINES, EXPORT_FORMATS, PANEL_LAYOUTS, PHOTO_FRAMES, SPORT_EVENTS, ROUTE_STYLES, EXPORT_STATUSES, FRAME_STYLES, LABEL_LANGUAGES, MAP_SHAPES, MARKER_ICONS, MOODS, TEXT_ROLES, TEXT_SLOTS, THEME_IDS, LAYER_KEYS, PALETTE_KEYS } from '@mapmory/design-schema';
 import { describe, expect, it } from 'vitest';
 import { de } from './de';
 import { en } from './en';
@@ -60,7 +60,9 @@ describe('i18n resources', () => {
       ['editor.routes.errors', ['too_large', 'unreadable', 'no_lines']],
       ['editor.photos.errors', ['unsupported_image', 'invalid_image', 'photo_limit', 'payload_too_large', 'generic']],
       ['weights', [100, 200, 300, 400, 500, 600, 700, 800, 900]],
-      ['preflight', ['text-outside-safe-zone', 'text-too-wide', 'low-contrast', 'text-too-small', 'low-dpi', 'exceeds-max-size', 'empty-title', 'marker-outside-map', 'photo-low-resolution']],
+      ['race.events', SPORT_EVENTS], ['race.disciplines', DISCIPLINES], ['race.layouts', PANEL_LAYOUTS],
+      ['race.import.errors', ['too_large', 'unreadable', 'no_lines']],
+      ['preflight', ['text-outside-safe-zone', 'text-too-wide', 'low-contrast', 'text-too-small', 'low-dpi', 'exceeds-max-size', 'empty-title', 'marker-outside-map', 'photo-low-resolution', 'leg-without-route', 'stats-too-wide']],
     ];
     const missing = families.flatMap(([f, values]) => values.map((v) => `${f}.${v}`)).filter((k) => !enKeys.has(k));
     expect(missing).toEqual([]);

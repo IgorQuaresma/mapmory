@@ -12,6 +12,8 @@ export function StylePanel() {
   const { t } = useTranslation();
   const design = useDesign();
   const { map } = design;
+  // Race posters list the sport themes first; other posters keep the catalog order (sport themes last).
+  const themes = design.sport ? [...THEME_LIST.filter((x) => x.sport), ...THEME_LIST.filter((x) => !x.sport)] : THEME_LIST;
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-3" aria-labelledby="style-themes">
@@ -19,7 +21,7 @@ export function StylePanel() {
           <span id="style-themes">{t('editor.style.themes')}</span>
         </SectionTitle>
         <div role="radiogroup" aria-labelledby="style-themes" className="grid grid-cols-4 gap-2">
-          {THEME_LIST.map((theme) => {
+          {themes.map((theme) => {
             const selected = theme.id === map.themeId;
             return (
               <button
