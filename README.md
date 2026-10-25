@@ -2,7 +2,8 @@
 
 Turn a written memory into a print-ready map poster. Describe the moment, confirm the place, design the poster
 without writing anything else, and download a file a print shop can use (PDF with bleed and crop marks,
-or 300 DPI PNG/JPEG/TIFF, optionally CMYK).
+or 300 DPI PNG/JPEG/TIFF, optionally CMYK). Posters can also show GPX/GeoJSON routes, your own photos and
+freely placed, rotated text (ADR [0006](docs/adr/0006-routes-and-photos.md)).
 
 Everything is built on OpenStreetMap data and open-source software. The design is in
 [docs/architecture-plan.md](docs/architecture-plan.md), the API contract in [docs/api.md](docs/api.md), the
@@ -89,6 +90,7 @@ See plan §8. In short:
 - Magic-link sessions in HttpOnly cookies; ALTCHA proof-of-work for anonymous interpretation.
 - Rate limits and quotas in Redis, plus an LLM budget breaker.
 - The design document contains catalog enums only, never URLs.
+- Route files are parsed in the browser and only simplified points are stored. Photos are re-encoded on upload (removing location and camera data), stored privately and referenced by id; unused ones are deleted after 24 hours.
 - The renderer only reaches the tile server, and Chromium only its own bundle. The renderer uses a database role that can't read accounts or memory text.
 - Memory text is discarded after interpretation unless the user opts in (then it is AES-256-GCM encrypted).
 - Retention jobs, data export and account deletion are built in.
