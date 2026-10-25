@@ -26,6 +26,7 @@ export interface PipelineResult {
 }
 
 export class ExportTooLargeError extends Error {}
+export class PhotoMissingError extends Error {}
 
 const CONTENT_TYPES = { pdf: 'application/pdf', png: 'image/png', jpeg: 'image/jpeg', tiff: 'image/tiff' } as const;
 const EXTENSIONS = { pdf: 'pdf', png: 'png', jpeg: 'jpg', tiff: 'tif' } as const;
@@ -36,6 +37,8 @@ export async function runExportPipeline(
   options: ExportOptions,
   deps: PipelineDeps,
   onProgress: (stage: PipelineStage, progress: number) => void | Promise<void> = () => {},
+  /** Photo files for the design's photo elements, by photo id. */
+  photos: Map<string, Buffer> = new Map(),
 ): Promise<PipelineResult> {
   const timings: Record<string, number> = {};
   const mark = (name: string, t0: number) => (timings[name] = Math.round(performance.now() - t0));
@@ -45,6 +48,8 @@ export async function runExportPipeline(
   const design = parseDesign(rawDesign);
 
   // 2. Geometry.
+  const missing = design.photos.filter((p) => !photos.has(p.photoId));
+  if (missing.length) throw new PhotoMissingError(`Missing photo files: ${missing.map((p) => p.photoId).join(', ')}`);
   const geometry = exportGeometry(design, options);
   if (geometry.exceedsLimit) throw new ExportTooLargeError('Requested output exceeds the maximum render size');
   const layout = computeLayout(design, { bleedDu: geometry.bleedDu, slugDu: geometry.slugDu });
@@ -70,7 +75,7 @@ export async function runExportPipeline(
   t0 = performance.now();
   const title = design.texts.find((t) => t.role === 'title')?.content ?? '';
   let pdf = await finalizePdf(
-    await composePdf({ design, geometry, cropMarks: options.cropMarks, distDir: deps.printPageDist, mapPng }),
+    await composePdf({ design, geometry, cropMarks: options.cropMarks, distDir: deps.printPageDist, mapPng, photos }),
     geometry,
     title,
   );
