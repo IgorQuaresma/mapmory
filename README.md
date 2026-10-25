@@ -4,6 +4,8 @@ Turn a written memory into a print-ready map poster. Describe the moment, confir
 without writing anything else, and download a file a print shop can use (PDF with bleed and crop marks,
 or 300 DPI PNG/JPEG/TIFF, optionally CMYK). Posters can also show GPX/GeoJSON routes, your own photos and
 freely placed, rotated text (ADR [0006](docs/adr/0006-routes-and-photos.md)).
+Race posters give each leg of a triathlon (or duathlon, marathon, gran fondo…) its own map with the athlete's
+route and splits (ADR [0007](docs/adr/0007-race-posters.md)).
 
 Everything is built on OpenStreetMap data and open-source software. The design is in
 [docs/architecture-plan.md](docs/architecture-plan.md), the API contract in [docs/api.md](docs/api.md), the

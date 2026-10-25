@@ -29,7 +29,7 @@ Base path `/api/v1`. JSON everywhere. Request and response types come from `@map
 | GET | `/geocode?q=&lang=&limit=` | — | `{ results: GeocodeResult[] }` |
 | GET | `/geocode/reverse?lat=&lng=&lang=` | — | `{ result: GeocodeResult \| null }` |
 | GET | `/catalog` | — | `Catalog` (below) |
-| POST | `/projects` | `CreateProjectRequest` `{ draft: DraftInput, keepMemoryText?, memoryText? }` | `201 { project: ProjectSummary, design: Design, revision: number }` |
+| POST | `/projects` | `CreateProjectRequest` `{ draft: DraftInput, keepMemoryText?, memoryText? }`; `draft.sport` (optional `DraftSport`: event, name, 1–3 legs with discipline/distanceKm/timeS, finishTimeS) creates a race poster (ADR 0007) | `201 { project: ProjectSummary, design: Design, revision: number }` |
 | GET | `/projects` | — | `{ projects: ProjectSummary[] }` |
 | GET | `/projects/:id` | — | `{ project, design, revision }` + `ETag: "<revision>"` |
 | PUT | `/projects/:id/design` | `{ design }` + header `If-Match: "<revision>"` | `200 { revision }` · `409` problem with `code: "revision_conflict"` plus `revision` (current number) and `design` (current document), so the client can rebase |

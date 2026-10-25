@@ -10,3 +10,4 @@ Decisions taken while implementing [the plan](../architecture-plan.md), includin
 | [0004](0004-tiles-and-fonts.md) | Tiles, glyphs and fonts pipeline (S4) | Accepted |
 | [0005](0005-runtime-and-storage.md) | Node 22 runtime, SeaweedFS for local S3 | Accepted |
 | [0006](0006-routes-and-photos.md) | Routes, photos and free text (design schema v3) | Accepted |
+| [0007](0007-race-posters.md) | Race posters: one map per leg (design schema v4) | Accepted |
