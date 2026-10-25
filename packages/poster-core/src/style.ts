@@ -16,6 +16,63 @@ export interface StyleEndpoints {
 }
 
 const SOURCE = 'basemap';
+const ROUTES = 'routes';
+const DASHES = { dashed: [2.5, 1.6], dotted: [0.1, 1.8] } as const;
+
+/**
+ * Routes are drawn by the map renderers themselves (not the overlay), so preview and print match exactly like
+ * the streets do. Widths are in logical pixels, which equal design units (plan §7.1).
+ */
+function routesGeoJson(design: Design) {
+  const features = design.routes.flatMap((r) => {
+    const props = { id: r.id, color: r.color, width: r.widthDu, style: r.style };
+    const line = { type: 'Feature' as const, properties: props, geometry: { type: 'LineString' as const, coordinates: r.points } };
+    if (!r.endpoints) return [line];
+    const dot = (c: [number, number]) => ({ type: 'Feature' as const, properties: { ...props, endpoint: true }, geometry: { type: 'Point' as const, coordinates: c } });
+    return [line, dot(r.points[0]!), dot(r.points.at(-1)!)];
+  });
+  return { type: 'FeatureCollection' as const, features };
+}
+
+function routeLayers(design: Design): LayerSpecification[] {
+  const line = (style: 'solid' | 'dashed' | 'dotted'): LayerSpecification => ({
+    id: `routes-${style}`,
+    type: 'line',
+    source: ROUTES,
+    filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'style'], style]],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['get', 'width'],
+      ...(style === 'solid' ? {} : { 'line-dasharray': [...DASHES[style]] }),
+    },
+  });
+  return [
+    {
+      id: 'routes-casing',
+      type: 'line',
+      source: ROUTES,
+      filter: ['==', ['geometry-type'], 'LineString'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': design.map.palette.land, 'line-width': ['+', ['get', 'width'], 3], 'line-opacity': 0.85 },
+    },
+    line('solid'),
+    line('dashed'),
+    line('dotted'),
+    {
+      id: 'routes-endpoints',
+      type: 'circle',
+      source: ROUTES,
+      filter: ['==', ['geometry-type'], 'Point'],
+      paint: {
+        'circle-color': ['get', 'color'],
+        'circle-radius': ['*', ['get', 'width'], 1.4],
+        'circle-stroke-color': design.map.palette.land,
+        'circle-stroke-width': 1.5,
+      },
+    },
+  ];
+}
 
 /** Map layers belonging to each user-facing layer toggle (used for incremental preview updates). */
 export const LAYER_GROUPS: Record<LayerKey, string[]> = {
@@ -262,6 +319,8 @@ export function buildStyle(design: Design, endpoints: StyleEndpoints): StyleSpec
     },
   ];
 
+  styleLayers.splice(styleLayers.findIndex((l) => l.id === 'labels-roads'), 0, ...routeLayers(design));
+
   return {
     version: 8,
     name: `mapmory-${design.map.themeId}`,
@@ -275,6 +334,7 @@ export function buildStyle(design: Design, endpoints: StyleEndpoints): StyleSpec
         // Attribution is rendered by the poster overlay so it is always printed (plan §7.5).
         attribution: '',
       },
+      [ROUTES]: { type: 'geojson', data: routesGeoJson(design) },
     },
     layers: styleLayers,
   };

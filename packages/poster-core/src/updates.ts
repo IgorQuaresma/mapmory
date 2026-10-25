@@ -13,6 +13,8 @@ export function styleUpdates(prev: Design, next: Design): StyleUpdate[] | null {
   const a = prev.map;
   const b = next.map;
   if (a.themeId !== b.themeId || a.labelLanguage !== b.labelLanguage || a.roadWeight !== b.roadWeight) return null;
+  // Route data lives in a GeoJSON source; any change rebuilds the style (setStyle with diff).
+  if (JSON.stringify(prev.routes) !== JSON.stringify(next.routes)) return null;
   const updates: StyleUpdate[] = [];
   for (const key of Object.keys(PALETTE_TARGETS) as PaletteKey[]) {
     if (a.palette[key] === b.palette[key]) continue;

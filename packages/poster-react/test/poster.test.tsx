@@ -46,6 +46,20 @@ describe('Poster', () => {
     expect(html).toMatch(/stroke="url\(#mm-airmail-[^)]+\)"/);
   });
 
+  it('draws photos through the provided source and never as a URL from the design', () => {
+    const photo = { id: 'p1', photoId: '0f8fad5b-d9cb-469f-a165-70867728950e', center: [500, 600] as [number, number], widthDu: 300, aspect: 0.75, pxWidth: 3000, rotationDeg: -6, frame: 'polaroid' as const, frameColor: '#FFFFFF' };
+    const html = renderToStaticMarkup(
+      <Poster design={{ ...draft, photos: [photo] }} renderMap={() => null} photoSrc={(id) => `/__photo/${id}`} />,
+    );
+    expect(html).toContain('src="/__photo/0f8fad5b-d9cb-469f-a165-70867728950e"');
+    expect(html).toContain('rotate(-6deg)');
+  });
+
+  it('rotates freely placed text', () => {
+    const free = { ...draft.texts[0]!, id: 'note', role: 'custom' as const, content: 'Here!', slot: 'free' as const, freePosition: [300, 400] as [number, number], rotationDeg: 12 };
+    expect(render({ ...draft, texts: [...draft.texts, free] })).toContain('rotate(12deg)');
+  });
+
   it('draws crop marks only in the slug area', () => {
     expect(render(draft, { bleedDu: 10, slugDu: 27, cropMarks: true })).toContain('data-testid="crop-marks"');
     expect(render(draft)).not.toContain('data-testid="crop-marks"');

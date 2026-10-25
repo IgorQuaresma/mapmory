@@ -15,6 +15,13 @@ export interface PosterProps {
   /** Pointer handlers for interactive marker dragging in the editor. */
   onMarkerPointerDown?: (id: string, event: PointerEvent<SVGGElement>) => void;
   selectedMarkerId?: string | null;
+  /** Image URL for an uploaded photo id: the API in the editor, a local route in the print page. */
+  photoSrc?: (photoId: string) => string;
+  /** Drag handlers for photos and freely placed texts in the editor. */
+  onPhotoPointerDown?: (id: string, event: PointerEvent<HTMLDivElement>) => void;
+  onTextPointerDown?: (id: string, event: PointerEvent<HTMLDivElement>) => void;
+  selectedPhotoId?: string | null;
+  selectedTextId?: string | null;
   className?: string;
 }
 
@@ -22,7 +29,21 @@ export interface PosterProps {
  * The poster drawn in design units (1 du = 1 CSS px). Callers scale it with a CSS transform.
  * Used unchanged by the editor preview and the print page, so text, frame and markers match exactly.
  */
-export function Poster({ design, layout: given, renderMap, guides, showCropMarks, onMarkerPointerDown, selectedMarkerId, className }: PosterProps) {
+export function Poster({
+  design,
+  layout: given,
+  renderMap,
+  guides,
+  showCropMarks,
+  onMarkerPointerDown,
+  selectedMarkerId,
+  photoSrc,
+  onPhotoPointerDown,
+  onTextPointerDown,
+  selectedPhotoId,
+  selectedTextId,
+  className,
+}: PosterProps) {
   const layout = given ?? computeLayout(design);
   const { outer, map } = layout;
   // Everything is positioned relative to the trim origin, offset by bleed+slug.
@@ -105,18 +126,66 @@ export function Poster({ design, layout: given, renderMap, guides, showCropMarks
         {showCropMarks && layout.slugDu > 0 && <CropMarks layout={layout} ox={ox} oy={oy} />}
       </svg>
 
+      {layout.photos.map((p) => (
+        <div
+          key={p.id}
+          data-testid={`photo-${p.id}`}
+          onPointerDown={onPhotoPointerDown ? (e) => onPhotoPointerDown(p.id, e) : undefined}
+          style={{
+            position: 'absolute',
+            left: p.x + ox - p.framePad,
+            top: p.y + oy - p.framePad,
+            width: p.w + 2 * p.framePad,
+            height: p.h + p.framePad + p.framePadBottom,
+            transform: p.rotationDeg ? `rotate(${p.rotationDeg}deg)` : undefined,
+            transformOrigin: `${p.framePad + p.w / 2}px ${p.framePad + p.h / 2}px`,
+            background: p.frame === 'border' || p.frame === 'polaroid' ? p.frameColor : undefined,
+            padding: `${p.framePad}px ${p.framePad}px ${p.framePadBottom}px`,
+            boxSizing: 'border-box',
+            boxShadow: p.frame === 'polaroid' ? '0 2px 6px rgba(0, 0, 0, 0.18)' : undefined,
+            borderRadius: p.frame === 'circle' ? '50%' : undefined,
+            outline: selectedPhotoId === p.id ? '2px dashed #3B82F6' : undefined,
+            outlineOffset: 4,
+            cursor: onPhotoPointerDown ? 'move' : undefined,
+            touchAction: onPhotoPointerDown ? 'none' : undefined,
+          }}
+        >
+          {/* A neutral placeholder shows through if the image cannot be loaded. */}
+          <div style={{ width: p.w, height: p.h, background: '#E6E4EE', borderRadius: p.frame === 'circle' ? '50%' : undefined, overflow: 'hidden' }}>
+            {photoSrc && (
+              <img
+                src={photoSrc(p.photoId)}
+                alt=""
+                draggable={false}
+                onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                style={{ display: 'block', width: p.w, height: p.h, objectFit: 'cover', pointerEvents: 'none' }}
+              />
+            )}
+          </div>
+        </div>
+      ))}
+
       {layout.texts.map((t) => (
         <div
           key={t.id}
           data-testid={`text-${t.id}`}
+          onPointerDown={t.free && onTextPointerDown ? (e) => onTextPointerDown(t.id, e) : undefined}
           style={{
             position: 'absolute',
             left: t.x + ox,
             top: t.y + oy,
-            transform: t.align === 'center' ? 'translateX(-50%)' : t.align === 'right' ? 'translateX(-100%)' : undefined,
+            transform:
+              [t.align === 'center' ? 'translateX(-50%)' : t.align === 'right' ? 'translateX(-100%)' : '', t.rotationDeg ? `rotate(${t.rotationDeg}deg)` : '']
+                .filter(Boolean)
+                .join(' ') || undefined,
+            transformOrigin: t.align === 'center' ? '50% 50%' : t.align === 'right' ? '100% 50%' : '0 50%',
             whiteSpace: 'pre',
-            // Texts over the map must not block map dragging in the editor.
-            pointerEvents: 'none',
+            // Slotted texts must not block map dragging; free texts are dragged themselves in the editor.
+            pointerEvents: t.free && onTextPointerDown ? 'auto' : 'none',
+            cursor: t.free && onTextPointerDown ? 'move' : undefined,
+            touchAction: t.free && onTextPointerDown ? 'none' : undefined,
+            outline: selectedTextId === t.id && t.free ? '2px dashed #3B82F6' : undefined,
+            outlineOffset: 4,
             fontFamily: cssFontFamily(t.fontId),
             fontWeight: t.weight,
             fontStyle: t.italic ? 'italic' : 'normal',
