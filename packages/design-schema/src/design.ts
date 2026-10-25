@@ -2,20 +2,23 @@ import { z } from 'zod';
 import {
   CORNERS,
   CUSTOM_PAPER_LIMITS_MM,
+  DISCIPLINES,
   FONT_IDS,
   FRAME_STYLES,
   LABEL_LANGUAGES,
   MAP_SHAPES,
   MARKER_ICONS,
+  PANEL_LAYOUTS,
   PHOTO_FRAMES,
   ROUTE_STYLES,
   PAPER_IDS,
+  SPORT_EVENTS,
   TEXT_ROLES,
   TEXT_SLOTS,
   THEME_IDS,
 } from './catalog';
 
-export const SCHEMA_VERSION = 3 as const;
+export const SCHEMA_VERSION = 4 as const;
 /** The trim width of every page, in design units (plan §4.1). */
 export const PAGE_WIDTH_DU = 1000;
 /** Routes carry coordinates, so designs may be larger than plain layouts. */
@@ -25,6 +28,10 @@ export const MAX_TEXTS = 12;
 export const MAX_ROUTES = 5;
 export const MAX_ROUTE_POINTS = 1000;
 export const MAX_PHOTOS = 4;
+/** Map panels on a race poster (one per leg). */
+export const MAX_LEGS = 3;
+/** Leg and finish times are stored in seconds (up to 10 days, enough for ultra events). */
+export const MAX_RACE_SECONDS = 10 * 86400;
 
 /** Plain text only: no control characters (C0/C1) or lone surrogates. */
 const plainText = (max: number) =>
@@ -163,6 +170,42 @@ export const PhotoSchema = z.object({
   frameColor: HexColor,
 });
 
+const raceSeconds = z.number().int().min(0).max(MAX_RACE_SECONDS);
+
+/** One leg of a race: its own map panel with its own view, the leg's route and its stats. */
+export const LegSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{1,24}$/),
+  discipline: z.enum(DISCIPLINES),
+  /** Shown above the stats, e.g. "Swim"; written in the poster's language by the draft. */
+  label: plainText(40),
+  center: LngLat,
+  zoom: z.number().min(1).max(18),
+  bearing: z.number().min(-180).max(180),
+  /** The route drawn in this panel (an entry of `routes`), or null. */
+  routeId: z.string().regex(/^[a-z0-9-]{1,24}$/).nullable(),
+  distanceKm: z.number().min(0).max(5000).nullable(),
+  timeS: raceSeconds.nullable(),
+});
+
+/**
+ * A race poster: the map area is split into one panel per leg (e.g. swim, bike and run of a triathlon). `map` keeps
+ * the shared style (theme, palette, layers, shape, outline) and the overall map area; each leg has its own view.
+ */
+export const SportSchema = z.object({
+  event: z.enum(SPORT_EVENTS),
+  layout: z.enum(PANEL_LAYOUTS),
+  /** Space between panels. */
+  gapDu: du(0, 150),
+  legs: z.array(LegSchema).min(1).max(MAX_LEGS),
+  /** Discipline icon, label, distance, time and pace under each panel. */
+  showStats: z.boolean(),
+  statsFontId: z.enum(FONT_IDS),
+  statsSizeDu: du(8, 48),
+  statsColor: HexColor,
+  units: z.enum(['metric', 'imperial']),
+  finishTimeS: raceSeconds.nullable(),
+});
+
 export const DesignSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
@@ -172,6 +215,8 @@ export const DesignSchema = z
     texts: z.array(TextSchema).max(MAX_TEXTS),
     routes: z.array(RouteSchema).max(MAX_ROUTES),
     photos: z.array(PhotoSchema).max(MAX_PHOTOS),
+    /** Null for a single-map poster. */
+    sport: SportSchema.nullable(),
     attribution: z.object({ corner: z.enum(CORNERS) }),
   })
   .superRefine((d, ctx) => {
@@ -193,6 +238,17 @@ export const DesignSchema = z
     for (const [i, t] of d.texts.entries()) {
       if (t.slot === 'free' && !t.freePosition) {
         ctx.addIssue({ code: 'custom', path: ['texts', i, 'freePosition'], message: 'A freely placed text needs a position' });
+      }
+    }
+    if (d.sport) {
+      const legIds = new Set<string>();
+      const routeIds = new Set(d.routes.map((r) => r.id));
+      for (const [i, leg] of d.sport.legs.entries()) {
+        if (legIds.has(leg.id)) ctx.addIssue({ code: 'custom', path: ['sport', 'legs', i, 'id'], message: 'Duplicate leg id' });
+        legIds.add(leg.id);
+        if (leg.routeId && !routeIds.has(leg.routeId)) {
+          ctx.addIssue({ code: 'custom', path: ['sport', 'legs', i, 'routeId'], message: 'Unknown route' });
+        }
       }
     }
     const markerIds = new Set<string>();
@@ -222,6 +278,8 @@ export type DesignText = z.infer<typeof TextSchema>;
 export type Inset = z.infer<typeof InsetSchema>;
 export type Route = z.infer<typeof RouteSchema>;
 export type Photo = z.infer<typeof PhotoSchema>;
+export type Leg = z.infer<typeof LegSchema>;
+export type Sport = z.infer<typeof SportSchema>;
 
 /** Validates a design and its serialized size. Throws a ZodError on failure. */
 export function parseDesign(input: unknown): Design {

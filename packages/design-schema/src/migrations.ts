@@ -30,6 +30,8 @@ const migrations: Record<number, Migration> = {
       ? doc.texts.map((t: Record<string, unknown>) => ({ freePosition: null, rotationDeg: 0, ...t }))
       : doc.texts,
   }),
+  /** v3 → v4 (2026-10-25): race posters with one map panel per leg (`sport`). */
+  3: (doc) => ({ ...doc, sport: null }),
 };
 
 export function migrateDesign(input: unknown): Design {

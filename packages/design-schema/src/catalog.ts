@@ -12,6 +12,10 @@ export const THEME_IDS = [
   'lavender-field',
   'gold-ink',
   'riviera',
+  // Race posters (sport events).
+  'race-day',
+  'finisher',
+  'trail',
 ] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
@@ -51,6 +55,18 @@ export type RouteStyle = (typeof ROUTE_STYLES)[number];
 
 export const PHOTO_FRAMES = ['none', 'border', 'polaroid', 'circle'] as const;
 export type PhotoFrame = (typeof PHOTO_FRAMES)[number];
+
+/** Sport legs: each one gets its own map panel on a race poster. */
+export const DISCIPLINES = ['swim', 'bike', 'run'] as const;
+export type Discipline = (typeof DISCIPLINES)[number];
+
+/** Race formats; they set the default legs and distances of a race poster. */
+export const SPORT_EVENTS = ['triathlon', 'duathlon', 'aquathlon', 'run', 'ride', 'swim'] as const;
+export type SportEvent = (typeof SPORT_EVENTS)[number];
+
+/** How the panels of a race poster share the map area. `hero`: the longest leg large, the others below it. */
+export const PANEL_LAYOUTS = ['columns', 'rows', 'hero'] as const;
+export type PanelLayout = (typeof PANEL_LAYOUTS)[number];
 
 export const CORNERS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'] as const;
 export type Corner = (typeof CORNERS)[number];

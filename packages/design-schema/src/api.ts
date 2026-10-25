@@ -2,11 +2,13 @@ import { z } from 'zod';
 import {
   BLEED_OPTIONS_MM,
   COLOR_PROFILES,
+  DISCIPLINES,
   EXPORT_DPIS,
   EXPORT_FORMATS,
   MOODS,
+  SPORT_EVENTS,
 } from './catalog';
-import { DesignSchema, LngLat } from './design';
+import { DesignSchema, LngLat, MAX_LEGS, MAX_RACE_SECONDS } from './design';
 
 /** Maximum memory text length accepted by the interpretation endpoint (plan §8.3). */
 export const MAX_MEMORY_TEXT = 1000;
@@ -93,6 +95,25 @@ export const InterpretResponseSchema = z.object({
 });
 export type InterpretResponse = z.infer<typeof InterpretResponseSchema>;
 
+/** The race found in a memory (or set by the user) that turns the draft into a race poster. */
+export const DraftSportSchema = z.object({
+  event: z.enum(SPORT_EVENTS),
+  /** Event name as written, e.g. "Ironman Frankfurt"; used as the title when there is no other. */
+  name: z.string().max(80).nullable(),
+  legs: z
+    .array(
+      z.object({
+        discipline: z.enum(DISCIPLINES),
+        distanceKm: z.number().min(0).max(5000).nullable(),
+        timeS: z.number().int().min(0).max(MAX_RACE_SECONDS).nullable(),
+      }),
+    )
+    .min(1)
+    .max(MAX_LEGS),
+  finishTimeS: z.number().int().min(0).max(MAX_RACE_SECONDS).nullable(),
+});
+export type DraftSport = z.infer<typeof DraftSportSchema>;
+
 export const DraftInputSchema = z.object({
   places: z.array(GeocodeResultSchema).min(1).max(5),
   title: z.string().max(120).nullable(),
@@ -100,6 +121,8 @@ export const DraftInputSchema = z.object({
   date: InterpretationSchema.shape.date,
   mood: z.enum(MOODS),
   locale: z.string().regex(/^[a-z]{2}(-[A-Z]{2})?$/),
+  /** Present for a race poster: one map panel per leg. */
+  sport: DraftSportSchema.optional(),
 });
 export type DraftInput = z.infer<typeof DraftInputSchema>;
 

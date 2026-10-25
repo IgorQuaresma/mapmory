@@ -1,7 +1,7 @@
 import type { Design } from '../src';
 
 export const sampleDesign: Design = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   page: {
     paper: 'A3',
     orientation: 'portrait',
@@ -41,5 +41,6 @@ export const sampleDesign: Design = {
   ],
   routes: [],
   photos: [],
+  sport: null,
   attribution: { corner: 'bottom-right' },
 };
